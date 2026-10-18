@@ -1,0 +1,10 @@
+# Telifli kaynaklar ve onlardan çıkan ham metin depoya girmez
+kaynaklar/
+donusum/
+*.pdf
+*.docx
+*.doc
+node_modules/
+denetim/rapor/
+__pycache__/
+pilot/
