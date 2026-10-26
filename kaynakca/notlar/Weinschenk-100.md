@@ -52,7 +52,7 @@ Taranmış (OCR) kopya; bazı sayfa köşeleri bozuk. Madde numarası ve PDF say
 ## Nasıl dikkat ederler (#40-49)
 - **#40 Dikkat seçicidir** [s.112-113]: karmaşık form dolduran kişi dikkat dağıtıcıları süzer, kararsız gezgin kolay çekilir; **makaleye dalmışken çıkan abonelik açılır penceresi** ne kadar dalmışsa o kadar sinir bozar. Bilinçdışı sürekli kendi adını, yemek, cinsellik, tehlike arar; büyük görsel, animasyon ve video dikkati kolayca dağıtır. → B09: içerik okunurken çıkan modal.
 - **#41 Bilgiye alışırlar** (USS Vincennes) [s.114]: alıştıkları bilginin değiştiğini fark etmezler; **tasarımcıya bariz olan kullanıcıya bariz değildir**; değişeni renk, boyut, hareket ya da sesle vurgula; **kritik bilgi gerekenden 10 kat fazla öne çıkmalı**. → Uyarı körlüğü: her şeyi kırmızı kutuya koyma, gerçekten kritik olanı ayır.
-- **#42 Çok pratik edilen beceri bilinçli dikkat istemez** [s.115-116]: otomatikleşen sil, onayla, sil, onayla dizisi fazladan silmeye yol açar. **Yalnız son eylemi değil bütün diziyi geri alabilme**; tek tek yerine **topluca seçip bir kez işlem yapma**. → **Onay diyaloğu alışkanlıkla tıklanır: koruyucu değildir; geri al daha iyidir** (Norman ile aynı). S03 için kanıt.
+- **#42 Çok pratik edilen beceri bilinçli dikkat istemez** [s.115-116]: otomatikleşen sil, onayla, sil, onayla dizisi fazladan silmeye yol açar. **Yalnız son eylemi değil bütün diziyi geri alabilme**; tek tek yerine **topluca seçip bir kez işlem yapma**. → **Onay diyaloğu alışkanlıkla tıklanır: koruyucu değildir; geri al daha iyidir** (Norman ile aynı). B14 için kanıt.
 - **#43 Sıklık beklentisi dikkati etkiler** [s.117-118]: havaalanı güvenliği sık görülen losyonu yakalar, nadir silahı kaçırır (testlerin ~%70'i başarısız); **nadir ama önemli olay için güçlü sinyal**; pil uyarısı örneği: **uyarı zamanını kullanıcı ayarlayabilmeli**. → Burs/son tarih hatırlatmaları: nadir ve kritik; özelleştirilebilir hatırlatma zamanı.
 - **#44 Sürekli dikkat yaklaşık 10 dakika** [s.119]: 7-10 dk sonra düşer; daha uzunsa yeni bilgi ya da ara; **çevrim içi demo ve eğitim videoları 7-10 dakikanın altında**. → COGA 6 dk ile uyumlu: video ≤ 6-10 dk ya da bölümlere ayrılmış. [OTO aday: video süresi > 10 dk ve bölüm yok → bilgi]
 - **#45 Yalnız belirgin (salient) ipuçlarına dikkat ederler** (gerçek bozuk para hangisi) [s.120]: kitlenin belirgin ipuçlarını belirle, onları bariz yap, gerisine bakılmayacağını bil.
@@ -128,7 +128,7 @@ Taranmış (OCR) kopya; bazı sayfa köşeleri bozuk. Madde numarası ve PDF say
 3. **B08 hata mesajı 5 öğesi** [#85 s.205] + **hata sorunlu alanın yanında** (stres ve hata anında görüş daralır) [#6 s.29, #86 s.207] + **yenilenen ekranda değişim fark edilmez** [#8 s.35]. Kod numaralı, edilgen hata metni → uyarı.
 4. **B16 bilgiyi yeniden isteme** [#66 s.165]: oturumlar arası hatırlamayan uygulama tanımayan kişi gibidir.
 5. **B18 (yeni) güvenli varsayılan** [#58 s.149].
-6. **S03 geri al > onay diyaloğu**; toplu geri alma, toplu işlem [#42 s.116].
+6. **B14 geri al > onay diyaloğu**; toplu geri alma, toplu işlem [#42 s.116].
 7. **S14 bekleme** [#36 s.103, #77 s.189]: ilerleme göstergesi, tutarlı süre, bekleme sırasında anlamlı iş.
 8. **S15 eskiye dönme** [#93 s.225].
 9. **S17 renk anlamı ve renk körlüğü** [#11 s.39, #12 s.43]: renk tek kodlama olamaz, kültürel anlam.
