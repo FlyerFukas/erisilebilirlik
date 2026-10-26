@@ -1,0 +1,18 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Profilim · Örnek Uygulama</title>
+<style>body{font-family:sans-serif;margin:0;padding:16px}nav a{display:inline-block;padding:12px;color:#333;text-decoration:none}nav a[aria-current]{color:#1d4ed8}
+.dev{font-size:64px;font-weight:700}label{display:block}input{min-height:44px;border:1px solid #888}</style></head><body>
+<header><a href="/">Örnek Uygulama</a></header>
+<nav><a href="/burslar">Burslarım</a><a href="/takvim">Takvim</a><a href="/profil" aria-current="page">Profilim</a></nav>
+<nav aria-label="breadcrumb"><ol><li><a href="/">Ana sayfa</a></li><li><a href="/profil">Profilim</a></li></ol></nav>
+<h1>Profilim</h1>
+<p class="dev">12 burs</p>
+<p>Kayıtlı burslarının sayısı yukarıda. Bilgilerini aşağıdan güncelleyebilirsin.</p>
+<form id="geri-bildirim"><h2>Geri bildirim gönder</h2>
+<label for="a">Adın</label><input id="a" required autocomplete="name">
+<label for="s">Soyadın</label><input id="s" required autocomplete="family-name">
+<label for="e">E-posta</label><input id="e" type="email" required autocomplete="email">
+<label for="m">Mesajın</label><textarea id="m" required></textarea>
+<button>Geri bildirimi gönder</button></form>
+<p><button style="background:oklch(0.6 0.17 145);color:#fff;border:0;padding:12px">Vazgeç</button></p>
+<footer><a href="mailto:destek@ornek.test">destek@ornek.test</a></footer>
+</body></html>

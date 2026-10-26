@@ -21,15 +21,21 @@ py -I araclar/donustur.py
 
 # skill'i ~/.claude/skills altına kur/güncelle
 py -I araclar/skill_kur.py
+
+# bir projeye kur ya da projedeki kopyayı güncelle (--ci: GitHub Action, --dene: yalnız göster)
+node araclar/projeye_kur.mjs ../projem
 ```
+
+Projeye kurulduktan sonra projede: `npm run erisim:kur` (bir kez), `npm run erisim -- <adres> --tara 4` (ilk seferde `--taban-yaz`). Giriş arkası ekranlar için `--oturum erisim/oturum.json`.
 
 ## Düzen
 
 | Yol | İçerik |
 |---|---|
-| `skill/erisilebilirlik/` | Skill: `SKILL.md`, `references/katalog.md` (36 kural + 7 ölçüm), `kaliplar.md`, `test-protokolleri.md`, `kaynakca.md` |
+| `skill/erisilebilirlik/` | Skill: `SKILL.md`, `references/katalog.md` (48 kural + 8 ölçüm), `kaliplar.md`, `test-protokolleri.md`, `kaynakca.md` |
 | `denetim/` | Otomatik denetim: `denetle.mjs` (komut), `olcumler.js` (sayfa içi ölçümler), `kurallar.mjs` (adlar, eşikler), `sozluk.json` (kelime listeleri), `test/` |
-| `araclar/` | Kaynak dönüştürme, arama, skill kurulumu |
+| `araclar/` | Kaynak dönüştürme, arama, skill kurulumu, projeye kurulum (`projeye_kur.mjs`) |
+| `kaynakca/notlar/` | 16 kaynağın bölüm bölüm notları (kendi cümlemizle, sayfa numaralı); katalogdaki her atıfın dayanağı |
 | `kaynaklar/`, `donusum/` | Telifli kaynaklar ve ham metni. **Depoya girmez** (`.gitignore`) |
 | `pilot/` | Canlı projelerde denetim raporları (kalibrasyon) |
 | `HANDOFF.md` | Oturum günlüğü: **yeni oturumda önce bunun en üstü** |

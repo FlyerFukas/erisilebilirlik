@@ -1,12 +1,14 @@
 <!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Burslarım · Örnek Uygulama</title>
-<style>body{font-family:sans-serif;margin:0;padding:16px}a{color:#1d4ed8}nav a,header a{display:inline-block;padding:12px;min-height:44px;box-sizing:border-box}.ana{background:#1d4ed8;color:#fff;border:0;padding:14px 24px}
+<style>body{font-family:sans-serif;margin:0;padding:16px}a{color:#1d4ed8}nav a[aria-current]{background:#dbeafe;font-weight:700;text-decoration:none}nav a,header a,footer a{display:inline-block;padding:12px;min-height:44px;box-sizing:border-box}.ana{background:#1d4ed8;color:#fff;border:0;padding:14px 24px}
 .ikinci{background:none;border:1px solid #1d4ed8;color:#1d4ed8;padding:14px 24px}label{display:block}input{min-height:44px;width:100%;box-sizing:border-box}</style></head><body>
 <header><a href="/">Örnek Uygulama</a></header>
 <nav><a href="/burslar" aria-current="page">Burslarım</a><a href="/takvim">Takvim</a><a href="/profil">Profilim</a></nav>
 <h1>Burslarım</h1>
+<div role="search" style="border:1px solid oklab(0.5 0 0 / 0.3);background:oklab(0.95 0 0 / 0.4)"><input type="search" aria-label="Burslarda ara" placeholder="Burslarda ara" style="border:0;background:transparent"></div>
 <p>Kaydettiğin burslar burada. Son başvuru tarihi yakın olanlar üstte.</p>
 <button class="ana">Yeni burs ekle</button> <button class="ikinci">Takvimde gör</button>
 <p>Son güncelleme: 18 Ekim 2026. Toplam tutar 1.250,50 TL.</p>
 <p><a href="/kilavuz.pdf">Başvuru kılavuzu (PDF, 2 MB)</a></p>
-<form><label for="e">E-posta</label><input id="e" type="email" placeholder="ornek@posta.com"><button class="ana" style="margin-top:8px">Hatırlatma iste</button></form>
+<form><label for="e">E-posta</label><input id="e" type="email" autocomplete="email" placeholder="ornek@posta.com"><button class="ana" style="margin-top:8px">Hatırlatma iste</button></form>
+<footer><a href="/yardim">Yardım ve iletişim</a></footer>
 </body></html>

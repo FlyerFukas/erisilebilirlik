@@ -6,9 +6,14 @@
 //   seçenekler:  --tara N    gezilecek ek sayfa (varsayılan 8, 0 = yalnız verilenler)
 //                --cikti D   rapor klasörü (varsayılan ./erisim-rapor)
 //                --sessiz    yalnız özet yaz
+//                --oturum F  Playwright storageState dosyası: giriş yapılmış sayfaları denetler
+//                            (oluşturma: npx playwright-core codegen --channel msedge --save-storage=oturum.json <adres>)
+//                --terimler F  projenin terim sözlüğü (varsayılan ./erisim/terimler.json varsa o)
+//                --taban-yaz   bu denetimin puanını ./erisim/taban.json'a taban çizgisi olarak yaz;
+//                              dosya varsa her raporda tabana göre değişim gösterilir
 // Çıkış kodu: kritik bulgu varsa 1 (CI'da derlemeyi durdurur), yoksa 0.
 import { chromium } from "playwright-core";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { olc } from "./olcumler.js";
@@ -18,17 +23,22 @@ const KOK = dirname(fileURLToPath(import.meta.url));
 const sozluk = JSON.parse(readFileSync(join(KOK, "sozluk.json"), "utf8"));
 
 function argumanlar(argv) {
-  const a = { adresler: [], tara: 8, cikti: "erisim-rapor", sessiz: false };
+  const a = { adresler: [], tara: 8, cikti: "erisim-rapor", sessiz: false, oturum: null, terimler: null };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--tara") a.tara = Number(argv[++i]);
     else if (argv[i] === "--cikti") a.cikti = argv[++i];
     else if (argv[i] === "--sessiz") a.sessiz = true;
+    else if (argv[i] === "--oturum") a.oturum = resolve(argv[++i]);
+    else if (argv[i] === "--terimler") a.terimler = resolve(argv[++i]);
+    else if (argv[i] === "--taban-yaz") a.tabanYaz = true;
     else a.adresler.push(argv[i]);
   }
   if (!a.adresler.length) {
-    console.error("Kullanım: node denetle.mjs <adres> [/yol ...] [--tara N] [--cikti klasör]");
+    console.error("Kullanım: node denetle.mjs <adres> [/yol ...] [--tara N] [--cikti klasör] [--oturum oturum.json] [--terimler terimler.json]");
     process.exit(2);
   }
+  if (a.oturum && !existsSync(a.oturum)) { console.error(`Oturum dosyası yok: ${a.oturum}`); process.exit(2); }
+  if (!a.terimler && existsSync(resolve("erisim/terimler.json"))) a.terimler = resolve("erisim/terimler.json");
   const taban = new URL(a.adresler[0]);
   a.adresler = a.adresler.map((y) => new URL(y, taban).href);
   return a;
@@ -42,15 +52,36 @@ async function tarayici() {
   throw new Error("Tarayıcı bulunamadı: Edge/Chrome kur ya da `npx playwright install chromium` çalıştır");
 }
 
-async function sayfaOlc(tr, url, mod, klasor, sira) {
+// Sayfa yüklenmeden önce çalışır: düzen kayması (S18, oturum pencereli CLS) ve en büyük içerik boyaması (S14) toplanır.
+function performansGozcusu() {
+  const p = (window.__erisimPerf = { cls: 0, lcp: 0 });
+  let pencere = 0, ilk = 0, son = 0;
+  try {
+    new PerformanceObserver((liste) => {
+      for (const e of liste.getEntries()) {
+        if (e.hadRecentInput) continue;
+        if (pencere && e.startTime - son < 1000 && e.startTime - ilk < 5000) pencere += e.value;
+        else { pencere = e.value; ilk = e.startTime; }
+        son = e.startTime;
+        p.cls = Math.max(p.cls, pencere);
+      }
+    }).observe({ type: "layout-shift", buffered: true });
+    new PerformanceObserver((liste) => { const e = liste.getEntries().at(-1); if (e) p.lcp = e.startTime; })
+      .observe({ type: "largest-contentful-paint", buffered: true });
+  } catch { /* gözcüyü desteklemeyen tarayıcı: ölçüm atlanır */ }
+}
+
+async function sayfaOlc(tr, url, mod, klasor, sira, a) {
+  const ortak = { locale: "tr-TR", ...(a.oturum ? { storageState: a.oturum } : {}) };
   const ctx = await tr.newContext(mod === "mobil"
-    ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, locale: "tr-TR" }
-    : { viewport: { width: 1366, height: 800 }, locale: "tr-TR" });
+    ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, ...ortak }
+    : { viewport: { width: 1366, height: 800 }, ...ortak });
+  await ctx.addInitScript(performansGozcusu);
   const p = await ctx.newPage();
   try {
     const yanit = await p.goto(url, { waitUntil: "networkidle", timeout: 30000 }).catch(() => p.goto(url, { waitUntil: "load", timeout: 30000 }));
     await p.waitForTimeout(1500);
-    const sonuc = await p.evaluate(olc, { mod, sozluk, esik: ESIK });
+    const sonuc = await p.evaluate(olc, { mod, sozluk: a.sozluk, esik: ESIK });
     sonuc.durum = yanit?.status() ?? 0;
     sonuc.mod = mod;
     if (mod === "masaustu" || sira === 0) {
@@ -98,6 +129,10 @@ function sayfalarArasi(sonuclar) {
   const tekil = [...new Set(kopuk)];
   if (tekil.length) bulgular.push({ kural: "K04", seviye: "uyari", url: "(site geneli)",
     mesaj: "Tıklanan etiket ile varılan sayfanın adı örtüşmüyor: kullanıcı doğru yere geldiğinden emin olamaz", ornekler: tekil.slice(0, 5) });
+
+  // K10: takılan kullanıcı hiçbir sayfadan insana ya da yardıma ulaşamıyorsa.
+  if (masa.length && !sonuclar.some((s) => s.metrik?.yardim)) bulgular.push({ kural: "K10", seviye: "uyari", url: "(site geneli)",
+    mesaj: "Denetlenen sayfaların hiçbirinde yardım, iletişim, SSS bağlantısı ya da e-posta/telefon yok: takılan kullanıcı çıkıp gider", ornekler: [] });
   return bulgular;
 }
 
@@ -139,6 +174,10 @@ function raporYaz(a, sonuclar, genel, klasor) {
     `| Boyut | Puan |`, `|---|---|`,
     ...Object.entries(puan).map(([k, v]) => `| ${ad[k]} (${k}) | ${v}/100 |`), ``,
     `**Kritik: ${say("kritik")} · Uyarı: ${say("uyari")} · Bilgi: ${say("bilgi")}**`, ``,
+    ...(a.taban ? [`Taban çizgisi (${a.taban.tarih}): ${Object.entries(puan).map(([k, v]) => {
+      const f = v - (a.taban.puan?.[k] ?? v);
+      return `${k} ${a.taban.puan?.[k] ?? "-"} → ${v}${f ? ` (${f > 0 ? "+" : ""}${f})` : ""}`;
+    }).join(" · ")} · kritik ${a.taban.kritik} → ${say("kritik")}`, ``] : []),
     `> Puan kıyas içindir: her ayrı sorun bir kez sayılır (kritik −15, uyarı −5). Otomatik denetim sorunların bir kısmını yakalar;`,
     `> 5 saniye testi, gövde testi ve 3 kişilik kullanım testi yerini tutmaz (katalog Ö bölümü).`, ``,
   ];
@@ -154,10 +193,10 @@ function raporYaz(a, sonuclar, genel, klasor) {
       satir.push(``);
     }
   }
-  satir.push(`## Sayfa ölçümleri`, ``, `| Sayfa | Mod | Durum | İlk ekran öğe | İlk ekran kelime | Okunabilirlik | Birincil buton |`, `|---|---|---|---|---|---|---|`);
+  satir.push(`## Sayfa ölçümleri`, ``, `| Sayfa | Mod | Durum | İlk ekran öğe | İlk ekran kelime | Okunabilirlik | Birincil buton | CLS | LCP ms | KB |`, `|---|---|---|---|---|---|---|---|---|---|`);
   for (const s of sonuclar) {
     const m = s.metrik || {};
-    satir.push(`| ${new URL(s.url).pathname} | ${s.mod} | ${s.hata ? "HATA: " + s.hata : s.durum} | ${m.ilkEkranEtkilesim ?? ""} | ${m.ilkEkranKelime ?? ""} | ${m.okunabilirlik ?? "-"} | ${m.birincilButon ?? ""} |`);
+    satir.push(`| ${new URL(s.url).pathname} | ${s.mod} | ${s.hata ? "HATA: " + s.hata : s.durum} | ${m.ilkEkranEtkilesim ?? ""} | ${m.ilkEkranKelime ?? ""} | ${m.okunabilirlik ?? "-"} | ${m.birincilButon ?? ""} | ${m.cls ?? "-"} | ${m.lcp ?? "-"} | ${m.agirlikKB ?? "-"} |`);
   }
   writeFileSync(join(klasor, "rapor.md"), satir.join("\n"), "utf8");
   writeFileSync(join(klasor, "rapor.json"), JSON.stringify({ puan, bulgular: gruplar, sonuclar }, null, 1), "utf8");
@@ -166,6 +205,10 @@ function raporYaz(a, sonuclar, genel, klasor) {
 
 async function main() {
   const a = argumanlar(process.argv.slice(2));
+  a.sozluk = { ...sozluk, terimler: a.terimler ? JSON.parse(readFileSync(a.terimler, "utf8")) : null };
+  const tabanYolu = resolve("erisim/taban.json");
+  a.taban = !a.tabanYaz && existsSync(tabanYolu) ? JSON.parse(readFileSync(tabanYolu, "utf8")) : null;
+  if (a.terimler && !a.sessiz) console.log(`Terim sözlüğü: ${a.terimler}`);
   const klasor = resolve(a.cikti);
   mkdirSync(klasor, { recursive: true });
   const tr = await tarayici();
@@ -176,7 +219,7 @@ async function main() {
   while (kuyruk.length) {
     const url = kuyruk.shift();
     if (!a.sessiz) console.log(`→ ${url}`);
-    const masa = await sayfaOlc(tr, url, "masaustu", klasor, sira);
+    const masa = await sayfaOlc(tr, url, "masaustu", klasor, sira, a);
     // Yönlendirilen sayfa (ör. oturum gerektiren her yol → /giris) bir kez denetlenir.
     const son = (masa.url || url).split("#")[0];
     if (son !== url.split("#")[0] && olculen.has(son)) {
@@ -184,7 +227,7 @@ async function main() {
       continue;
     }
     olculen.add(son); gorulen.add(son.split("?")[0]);
-    const mobil = await sayfaOlc(tr, url, "mobil", klasor, sira);
+    const mobil = await sayfaOlc(tr, url, "mobil", klasor, sira, a);
     sonuclar.push(masa, mobil);
     sira++;
     for (const l of masa.linkler || []) {
@@ -197,6 +240,13 @@ async function main() {
   await tr.close();
   const { tum, puan, say } = raporYaz(a, sonuclar, sayfalarArasi(sonuclar), klasor);
   console.log(`\nPuan  B ${puan.B} · S ${puan.S} · K ${puan.K}   Kritik ${say("kritik")} · Uyarı ${say("uyari")} · Bilgi ${say("bilgi")}`);
+  if (a.taban) console.log(`Taban (${a.taban.tarih}): B ${a.taban.puan.B} · S ${a.taban.puan.S} · K ${a.taban.puan.K}   Kritik ${a.taban.kritik}`);
+  if (a.tabanYaz) {
+    mkdirSync(dirname(tabanYolu), { recursive: true });
+    writeFileSync(tabanYolu, JSON.stringify({ tarih: new Date().toISOString().slice(0, 10), adres: a.adresler[0], puan,
+      kritik: say("kritik"), uyari: say("uyari"), bilgi: say("bilgi") }, null, 2) + "\n", "utf8");
+    console.log(`Taban çizgisi yazıldı: ${tabanYolu}`);
+  }
   if (!a.sessiz) for (const b of tum.filter((b) => b.seviye === "kritik")) console.log(`  [KRİTİK ${b.kural}] ${b.url}: ${b.mesaj}`);
   console.log(`Rapor: ${join(klasor, "rapor.md")}`);
   process.exit(say("kritik") ? 1 : 0);
