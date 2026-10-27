@@ -107,16 +107,33 @@ const eksik = satirlar.filter((s) => !mevcut.split(/\r?\n/).includes(s));
 if (eksik.length) yaz(gi, `${mevcut}${mevcut && !mevcut.endsWith("\n") ? "\n" : ""}\n# Erişilebilirlik denetimi (oturum dosyası çerez içerir, asla commit'lenmez)\n${eksik.join("\n")}\n`, `${eksik.length} satır`);
 else yapilan.push("dokunma   .gitignore  (satırlar var)");
 
+// 4b · ESLint: düz yapılandırma (eslint.config.*) bütün depoyu tarar; denetim kopyası projenin lint'ine girmesin.
+// Yalnız globalIgnores([ ... ]) kalıbı varsa satır eklenir; başka biçimde dokunulmaz, elle eklemek için uyarılır.
+const eslintDosyasi = ["eslint.config.mjs", "eslint.config.js", "eslint.config.ts", "eslint.config.cjs"].map((d) => join(kok, d)).find(existsSync);
+if (eslintDosyasi) {
+  const e = readFileSync(eslintDosyasi, "utf8");
+  if (e.includes("erisim/denetim/**")) yapilan.push(`dokunma   ${relative(kok, eslintDosyasi)}  (yoksayma var)`);
+  else if (/globalIgnores\(\[\s*\n(\s*)/.test(e)) {
+    const [, girinti] = e.match(/globalIgnores\(\[\s*\n(\s*)/);
+    yaz(eslintDosyasi, e.replace(/globalIgnores\(\[\s*\n/, (m) => `${m}${girinti}"erisim/denetim/**",\n`), "denetim kopyası lint dışı");
+  } else yapilan.push(`ELLE      ${relative(kok, eslintDosyasi)}: yoksayma listesine "erisim/denetim/**" ekle`);
+}
+
 // 5 · CLAUDE.md bölümü
 const cm = join(kok, "CLAUDE.md");
 const BASLIK = "## Erişilebilirlik (son kullanıcı)";
+// package.json'ı olmayan (düz HTML/PWA) projede npm betiği yok: komutlar doğrudan yazılır.
+const npmVar = existsSync(pj);
+const K = npmVar
+  ? { denetle: "npm run erisim --", kur: "npm run erisim:kur", statik: "npm run erisim:statik" }
+  : { denetle: "node erisim/denetim/denetle.mjs", kur: "npm install --prefix erisim/denetim", statik: "node erisim/denetim/statik.mjs ." };
 const bolum = `${BASLIK}
 
 Erişilebilirlik burada bilişsel yük, sezgisel etkileşim ve bilgi kokusu demek: kullanıcı ürünü kılavuzsuz, destek aramadan, yorulmadan anlasın (WCAG değil).
 
 - Kullanıcıya görünen her iş (sayfa, form, menü, metin, hata, boş durum) öncesinde \`erisilebilirlik\` skill'ini çağır; ürün niyeti \`erisim/niyet.md\`, terimler \`erisim/terimler.json\`.
-- İş bitince denetim: \`npm run erisim -- <adres> --tara 4\` (ilk kez: \`npm run erisim:kur\`). Form ya da gönderim değiştiyse \`--etkilesim\` ekle: form gerçekten gönderilir, yazma istekleri ağda kesilir (kayıt oluşmaz). Kritik bulgu varsa iş bitmemiştir. Puanı ve rapor yolunu kanıt olarak göster.
-- Kod taraması (giriş arkası ekranlar dahil, sunucu gerekmez): \`npm run erisim:statik\`.
+- İş bitince denetim: \`${K.denetle} <adres> --tara 4\` (ilk kez: \`${K.kur}\`). Form ya da gönderim değiştiyse \`--etkilesim\` ekle: form gerçekten gönderilir, yazma istekleri ağda kesilir (kayıt oluşmaz). Kritik bulgu varsa iş bitmemiştir. Puanı ve rapor yolunu kanıt olarak göster.
+- Kod taraması (giriş arkası ekranlar dahil, sunucu gerekmez): \`${K.statik}\`.
 - Giriş arkasındaki ekranlar: \`npx --prefix erisim/denetim playwright-core codegen --channel msedge --save-storage=erisim/oturum.json <adres>\` ile giriş yap, sonra \`--oturum erisim/oturum.json\`. Oturum dosyası commit'lenmez.
 - Taban çizgisi: ilk denetimde \`--taban-yaz\`; sonraki raporlar tabana göre değişimi gösterir.
 - Denetim kopyasını elle düzenleme; güncellemek için Erisilebilirlik deposunda \`node araclar/projeye_kur.mjs <bu proje>\`.
@@ -155,4 +172,4 @@ jobs:
 
 console.log(`${dene ? "[deneme] " : ""}Proje: ${kok}\nDenetim sürümü: ${surum}\n`);
 for (const y of yapilan) console.log(`  ${y}`);
-if (!dene) console.log(`\nSıradaki adımlar:\n  1. erisim/niyet.md ve erisim/terimler.json'u doldur\n  2. npm run erisim:kur\n  3. npm run erisim -- <adres> --tara 4 --taban-yaz`);
+if (!dene) console.log(`\nSıradaki adımlar:\n  1. erisim/niyet.md ve erisim/terimler.json'u doldur\n  2. ${K.kur}\n  3. ${K.denetle} <adres> --tara 4 --taban-yaz`);

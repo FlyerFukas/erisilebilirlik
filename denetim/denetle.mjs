@@ -88,6 +88,9 @@ async function sayfaOlc(tr, url, mod, klasor, sira, a) {
     const sonuc = await p.evaluate(olc, { mod, sozluk: a.sozluk, esik: ESIK, anaYol: a.anaYol });
     sonuc.durum = yanit?.status() ?? 0;
     sonuc.mod = mod;
+    // Hata sayfası boş olduğu için öbür kuralların hiçbiri tetiklenmez ve puan 100 çıkardı (pilot: iliski-haritasi kökü 404).
+    if (sonuc.durum >= 400) sonuc.bulgular.unshift({ kural: "K03", seviye: "kritik",
+      mesaj: `Sayfa HTTP ${sonuc.durum} döndü: kullanıcı bu adreste aradığını değil hata sayfasını görüyor. Adresi düzelt ya da çalışan sayfaya yönlendir`, ornekler: [new URL(url).pathname] });
     if (mod === "masaustu" || sira === 0) {
       sonuc.ekranGoruntusu = `${String(sira).padStart(2, "0")}-${mod}.png`;
       await p.screenshot({ path: join(klasor, sonuc.ekranGoruntusu) });

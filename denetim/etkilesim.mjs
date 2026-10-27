@@ -104,7 +104,9 @@ async function gonder(p, i, doldur) {
     });
     gozcu.observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true });
     window.__erisimGozcu = gozcu;
-    const baslik = f.querySelector("h1,h2,h3,legend")?.innerText || f.getAttribute("aria-label") || f.id || f.getAttribute("action") || `form ${i + 1}`;
+    const dugme = f.querySelector("button:not([type=button]), input[type=submit]");
+    const baslik = f.querySelector("h1,h2,h3,legend")?.innerText || f.getAttribute("aria-label") || (dugme && (dugme.innerText || dugme.value)) ||
+      f.id || `form ${i + 1}`;
     return { ad: `form "${baslik.trim().slice(0, 40)}"`, doldurulan, beklenenHata, yerelGecersiz, adres: location.href };
   }, { i, doldur, ORNEK });
   if (!once) return null;

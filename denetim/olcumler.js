@@ -594,7 +594,9 @@ export function olc({ mod, sozluk, esik, anaYol = "/" }) {
   const ciplakBos = yaprakMetin.filter((x) => /^(veri yok|kayıt yok|kayıt bulunamadı|sonuç yok|sonuç bulunamadı|bulunamadı|liste boş|boş|içerik yok|no data|no results( found)?|nothing (here|found)|empty|no items)[.!]?$/iu.test(x.t));
   if (ciplakBos.length) ekle("K07", "uyari", `Boş durum yalnız "${ciplakBos[0].t}" diyor: ne olduğunu ve ilk adımı söylemiyor`, ciplakBos.map((x) => tanim(x.el)));
   const adimsiz = yaprakMetin.filter((x) => {
-    if (!/(^|\s)henüz\s|no .{1,30} yet|nothing yet/iu.test(x.t) || kelimeSay(x.t) > 25 || x.el.closest("a, button")) return false;
+    // Yalnız boş durum kalıbı: "Henüz burs eklemedin", "Henüz kayıt yok". "Henüz gözlenmemiş ilişkiler" açıklamadır. (Pilot kalibrasyonu)
+    if (!/(^|\s)henüz\s.{0,60}?(yok|eklemedin|eklenmedi|eklenmemiş|bulunmuyor|oluşturmadın|kaydetmedin|seçmedin|girmedin)(?!\p{L})|no .{1,30} yet|nothing yet/iu.test(x.t) ||
+      kelimeSay(x.t) > 25 || x.el.closest("a, button, summary")) return false;
     let kap = x.el;
     for (let i = 0; i < 3 && kap.parentElement && kap.parentElement.getBoundingClientRect().height < 400; i++) kap = kap.parentElement;
     return ![...kap.querySelectorAll("a[href], button, [role=button]")].some(gorunur);

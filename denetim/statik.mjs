@@ -13,6 +13,8 @@ import { KURALLAR } from "./kurallar.mjs";
 const sozluk = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "sozluk.json"), "utf8"));
 const UZANTI = /\.(tsx|jsx|ts|js|mjs|html|vue|svelte|astro)$/;
 const ATLA = new Set(["node_modules", ".next", ".git", "dist", "build", "out", ".vercel", "coverage", "erisim", "erisim-rapor", "yedek", "public",
+  // Üçüncü taraf ya da örnek kod ürünün parçası değil. (Pilot kalibrasyonu: ornekproje/referans)
+  "referans", "reference", "vendor", "third_party", "examples",
   // Komut satırı ve test kodu kullanıcıya görünmez: oradaki toLocaleString() ya da e.message bulgu değildir.
   "scripts", "botlar", "supabase", "test", "tests", "__tests__", "e2e"]);
 
@@ -21,7 +23,8 @@ function dosyalar(kok, kl = kok, liste = []) {
     if (ATLA.has(ad) || ad.startsWith(".")) continue;
     const yol = join(kl, ad);
     const d = statSync(yol);
-    if (d.isDirectory()) dosyalar(kok, yol, liste);
+    // components/ui: hazır bileşen kütüphanesi (shadcn vb.), projenin kendi metni değil.
+    if (d.isDirectory()) { if (!/[\\/]components[\\/]ui$/.test(yol)) dosyalar(kok, yol, liste); }
     else if (UZANTI.test(ad) && d.size < 400_000 && !/\.(test|spec|d)\.[tj]sx?$/.test(ad)) liste.push(yol);
   }
   return liste;
@@ -31,21 +34,38 @@ function dosyalar(kok, kl = kok, liste = []) {
 // JSX özniteliğinde ok fonksiyonu olabilir (onClick={() => {}}): ">" karakterini iki düzey süslü parantez içinde tanı.
 const OZ = String.raw`(?:[^>{]|\{(?:[^{}]|\{[^{}]*\})*\})*`;
 const belirsiz = (liste) =>liste.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+// Beşinci öğe isteğe bağlı süzgeç (eşleşme, dosya metni, dosya adı) → true ise bulgu sayılır. Hepsi pilot kalibrasyonundan (KARARLAR K-03).
+const ARAYUZ = /\.(tsx|jsx|html|vue|svelte|astro)$/; // işaretleme içeren dosya
+const satiri = (metin, i) => metin.slice(metin.lastIndexOf("\n", i) + 1, (metin.indexOf("\n", i) + 1 || metin.length + 1) - 1);
+const etiketi = (metin, i) => metin.slice(metin.lastIndexOf("<", i), metin.indexOf(">", i) + 1);
 const KURAL = [
+  // aria-label tam adı veriyorsa ("Seç" + "Erasmus+: ayrıntıyı aç") görünen kısa metin satır bağlamıyla anlaşılır.
   ["K01", "kritik", new RegExp(`<(button|a|Link)\\b${OZ}>\\s*(${belirsiz(sozluk.belirsiz_kritik)})\\s*</(button|a|Link)>`, "giu"),
-    "Bağlantı/buton metni hedefini söylemiyor"],
+    "Bağlantı/buton metni hedefini söylemiyor", (m, _, d) => ARAYUZ.test(d) && !/aria-label/.test(m[0])],
   ["K01", "uyari", new RegExp(`<(button|a|Link)\\b${OZ}>\\s*(${belirsiz(sozluk.belirsiz_uyari)})\\s*</(button|a|Link)>`, "giu"),
-    "Belirsiz eylem etiketi: sonucu söyleyen fiil kullan"],
+    "Belirsiz eylem etiketi: sonucu söyleyen fiil kullan", (m, _, d) => ARAYUZ.test(d) && !/aria-label/.test(m[0])],
   ["B13", "uyari", /\.toLocale(Date|Time)?String\(\s*\)/g, "Tarih/sayı biçimi dil belirtmeden: kullanıcının tarayıcısına göre değişir. 'tr-TR' ver"],
-  ["B13", "uyari", /Intl\.(NumberFormat|DateTimeFormat)\(\s*['"]en(-US)?['"]/g, "İngilizce yerel biçim: Türkçe arayüzde 1,250.50 ve 10/18/2026 görünür"],
+  // formatToParts ile saat dilimi hesabı ekrana yazılmaz, yalnız hesaptır.
+  ["B13", "uyari", /Intl\.(NumberFormat|DateTimeFormat)\(\s*['"]en(-US)?['"]/g, "İngilizce yerel biçim: Türkçe arayüzde 1,250.50 ve 10/18/2026 görünür",
+    (m, metin) => !/formatToParts/.test(metin.slice(m.index, m.index + 400))],
   ["B05", "uyari", /onPaste=\{[^}]*preventDefault|onpaste=["']return false/g, "Yapıştırma engelleniyor: şifre yöneticisi ve uzun kodlar elle yazılmak zorunda kalır"],
-  ["B05", "uyari", /autoComplete=["']off["']|autocomplete=["']off["']/g, "Otomatik doldurma kapatılmış: tarayıcı bilinen bilgiyi dolduramaz"],
+  // Arama kutusu, yazma alanı, "silmek için yaz" onayında kapatmak doğrudur; kural şifre ve e-posta için.
+  ["B05", "uyari", /autoComplete=["']off["']|autocomplete=["']off["']/g, "Şifre/e-posta alanında otomatik doldurma kapatılmış: tarayıcı bilinen bilgiyi dolduramaz",
+    (m, metin) => /type=["'](password|email)["']|name=["'][^"']*(e-?posta|email|mail|sifre|password)/i.test(etiketi(metin, m.index))],
   ["B09", "uyari", /<video\b(?![^>]*\bcontrols\b)[^>]*\bautoPlay\b|<video\b(?![^>]*\bcontrols\b)[^>]*\bautoplay\b/g, "Kendiliğinden oynayan, denetimsiz video"],
   ["B09", "uyari", /http-equiv=["']refresh["']/gi, "Sayfa kendiliğinden yenileniyor (meta refresh)"],
   ["S12", "uyari", /user-scalable\s*=\s*no|maximum-scale\s*=\s*1(\.0)?\b|maximumScale:\s*1\b|userScalable:\s*false/g, "Yakınlaştırma kapatılmış"],
-  ["B12", "uyari", /\{\s*JSON\.stringify\(/g, "JSON doğrudan arayüze yazılıyor: kullanıcı ham veri görür"],
-  ["B12", "bilgi", /\{\s*(e|err|error|hata|h)\??\.message\s*\}|\{\s*String\(\s*(e|err|error|hata|h)\s*\)\s*\}/g, "Ham hata mesajı (exception metni) kullanıcıya gösteriliyor: insan diliyle mesaj ve sonraki adım yaz"],
-  ["S06", "uyari", new RegExp(String.raw`<button\b(?![^>]*aria-label)${OZ}>\s*<(svg|[A-Z]\w*Icon)\b(?:[^]*?<\/\1>|${OZ}\/>)\s*<\/button>`, "g"),"Yalnız ikonlu, adı olmayan buton"],
+  // Yalnız JSX çocuğu olarak: value={JSON.stringify(...)} gizli alanı, SQL ve betik metni kullanıcıya görünmez.
+  ["B12", "uyari", />\s*\{\s*JSON\.stringify\(/g, "JSON doğrudan arayüze yazılıyor: kullanıcı ham veri görür", (m, _, d) => ARAYUZ.test(d)],
+  ["B12", "bilgi", />\s*\{\s*(e|err|error|hata|h)\??\.message\s*\}|>\s*\{\s*String\(\s*(e|err|error|hata|h)\s*\)\s*\}/g,
+    "Ham hata mesajı (exception metni) kullanıcıya gösteriliyor: insan diliyle mesaj ve sonraki adım yaz", (m, _, d) => ARAYUZ.test(d)],
+  // Sunucudan arayüze dönen metne gömülü ham hata: return { hata: `Eklenemedi: ${error.message}` }.
+  // throw new Error(...) sayılmaz: Next.js canlıda sunucu hata metnini kullanıcıya göstermez.
+  ["B12", "bilgi", /\$\{\s*(e|err|error|h)\??\.message\s*\}/g,
+    "Ham hata mesajı (veritabanı/exception metni) arayüze dönen mesaja gömülü: kullanıcıya ne olduğunu ve ne yapacağını insan diliyle söyle",
+    (m, metin) => { const s = satiri(metin, m.index); return /(hata|mesaj|message|error|uyari)\s*:|\.push\(|toast|alert\(/i.test(s) && !/throw\s|console\./.test(s); }],
+  ["S06", "uyari", new RegExp(String.raw`<button\b(?![^>]*aria-label)${OZ}>\s*<(svg|[A-Z]\w*Icon)\b(?:[^]*?<\/\1>|${OZ}\/>)\s*<\/button>`, "g"), "Yalnız ikonlu, adı olmayan buton",
+    (m, _, d) => ARAYUZ.test(d) && !/aria-label|title=/.test(m[0])],
 ];
 // Önceden işaretli pazarlama izni: checkbox 3 satır çevresinde pazarlama kelimesiyle birlikte varsayılan işaretli.
 const IZIN = new RegExp(sozluk.pazarlama_onay.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "iu");
@@ -58,9 +78,9 @@ for (const dosya of dosyalar(kok)) {
   const metin = readFileSync(dosya, "utf8");
   const satirNo = (i) => metin.slice(0, i).split("\n").length;
   const yer = relative(kok, dosya).replace(/\\/g, "/");
-  for (const [kural, seviye, desen, mesaj] of KURAL) {
+  for (const [kural, seviye, desen, mesaj, suzgec] of KURAL) {
     desen.lastIndex = 0;
-    for (const m of metin.matchAll(desen)) bulgular.push({ kural, seviye, mesaj, yer: `${yer}:${satirNo(m.index)}`, ornek: m[0].replace(/\s+/g, " ").slice(0, 90) });
+    for (const m of metin.matchAll(desen)) if (!suzgec || suzgec(m, metin, dosya)) bulgular.push({ kural, seviye, mesaj, yer: `${yer}:${satirNo(m.index)}`, ornek: m[0].replace(/\s+/g, " ").slice(0, 90) });
   }
   const satirlar = metin.split("\n");
   satirlar.forEach((s, i) => {

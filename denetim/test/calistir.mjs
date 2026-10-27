@@ -59,6 +59,8 @@ for (const [kural, parca] of [["B13", "dili belirtilmemiş"], ["S08", "belirgin 
   dogrula(mesajVar(kotu2, kural, parca), `kotu2.html → ${kural} "${parca}"`);
 }
 dogrula(!mesajVar(kotu2, "K10", "hiçbirinde yardım"), "kotu2.html → e-posta bağlantısı yardım sayılıyor (K10 site geneli yok)");
+const yok = await denetle("olmayan-sayfa.html");
+dogrula(yok.bulgular.some((b) => b.kural === "K03" && b.seviye === "kritik" && b.mesaj.includes("HTTP 404")), "olmayan sayfa → K03 kritik \"HTTP 404\" (hata sayfası 100 puan almaz)");
 // Etkileşim senaryosu (--etkilesim): yazma istekleri kesilir, form gerçekten gönderilir.
 const formKotu = await denetle("form-kotu.html", ["--etkilesim"]);
 for (const [kural, parca] of [["B08", "hiçbir hata mesajı görünmedi"], ["B08", "girilen veri silindi"], ["B08", "doğrulama balonu"], ["S04", "1 sn içinde"]]) {
