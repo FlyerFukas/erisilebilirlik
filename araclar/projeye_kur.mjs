@@ -78,6 +78,11 @@ Bu dosya arayüz kararlarının dayanağıdır. Claude her arayüz işinde buna 
 ## Kullanıcının kelimeleri
 <!-- Kullanıcı bu şeylere ne diyor? Menü ve etiketler buradan seçilir (K02). -->
 
+## Niyet sıfatları
+<!-- Covert niyet alıştırması: kullanıcının ürünü tarif ederken kullanmasını istediğin 3-5 sıfat ve kullanılmamasına razı olduğun 3-5 sıfat. İki liste birbirinin tekrarı ya da zıddı değil, olumsuz sıfat yok. İki tasarım seçeneği arasında kalınca bakılır. -->
+Kullanıcı ürünü böyle tarif etsin:
+Şunlarla tarif edilmese de olur:
+
 ## Asla
 <!-- Bu üründe kabul edilmeyecek şeyler, ör. "kayıt olmadan fiyat görülemez olmasın". -->
 `, "ürün niyeti şablonu");

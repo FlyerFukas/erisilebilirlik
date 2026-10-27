@@ -111,6 +111,8 @@ Otomatik denetim ve uzman incelemesi testin **yerini tutmaz**: otomatik test bil
 ### 7. Kayıt
 Projenin `HANDOFF.md` günlüğüne tek satır: tarih · görev başarı oranı · ortalama kolaylık · ortalama algılanan süre oranı · düzeltilen 3 sorun. Bir sonraki tur aynı görevlerle yapılır, kıyas mümkün olsun.
 
+**Küçük rapor** (paylaşılacaksa): 2 dakikada okunacak, 30 dakikada yazılacak, madde madde: ne test edildi, görevler, düzeltilecek sorunlar, kayıtlara erişim, sonraki test tarihi [Krug-RSME s.120]. "Nasılsa yeni projede değişecek" deme; sor: **"Çoğu kişi için bu sorunu hiç değilse yumuşatacak en küçük değişiklik ne?"** [Krug-RSME s.120].
+
 ### 8. Uzaktan varyant (tek kişilik ekip, katılımcı başka şehirde)
 Yüz yüze testin yaklaşık **%80 faydası, %70 emeği**; aynı odada olmanın zenginliği, netleştirme ve kontrol (kesinti) kaybolur [Krug-RSME s.149-150]. İlk birkaç tur (yaklaşık 3 aylık) yüz yüze, sonra uzaktan [Krug-RSME s.154].
 - **Moderatörlü:** katılımcı **kendi bilgisayarından** ya da telefonundan ürüne girer, sen ekran paylaşımıyla izlersin (gecikme onu etkilemesin). Paylaşım yazılımı katılımcı için 1 dakikadan kısa sürede kurulmalı; e-postasını ve bildirimlerini gizlemesini söyle [Krug-RSME s.151]. Akış, karşılama metni ve gözlem formu aynıdır; onamı kayıttan önce yine sesli al.
@@ -132,7 +134,7 @@ Rastgele, tercihen derin bir iç sayfa aç. Gözünü kıs ya da ekranı kol boy
 Her görevden **hemen sonra**: "Bu görev ne kadar kolaydı?" 1 (çok zor) - 7 (çok kolay). Görev ortalaması 5,5 altıysa görev yeniden tasarlanır.
 Sayılı ölçek katılımcıyı zorluyorsa (okuma güçlüğü, yorgunluk): **5 yüzlü gülen yüz ölçeği** ya da üç seçenek, "çok beğendim / idare eder / hiç beğenmedim" [COGA 5.4.1].
 
-**Uyarı:** öz bildirim güvenilmez. Neredeyse ağlayacak kadar zorlanan kişi 7 üzerinden "6" verebilir [Krug-RSME s.99]; günler sonra sorulan memnuniyet daha olumlu çıkar [Weinschenk-100 #83]. Puanı **gözlenen başarı ve hata ile birlikte** yorumla; "puan yüksek, geçti" deme.
+**Uyarı:** öz bildirim güvenilmez. Neredeyse ağlayacak kadar zorlanan kişi 7 üzerinden "6" verebilir [Krug-RSME s.99]; günler sonra sorulan memnuniyet daha olumlu çıkar [Weinschenk-100 #83]. Anılar her hatırlamada yeniden kurulur ve sorunun kelimesi cevabı değiştirir: geçmiş davranışı sorma, gözle [Weinschenk-100 #24 s.75-76]. Geri bildirim en doğru **yüz yüze** toplanır; e-posta anketinde olumsuzluk ve yanlış artar [Weinschenk-100 #67 s.167-169]. Puanı **gözlenen başarı ve hata ile birlikte** yorumla; "puan yüksek, geçti" deme.
 
 **İsteğe bağlı kısa ölçek** (Davis-TAM s.14'teki 6+6 maddeden Türkçe uyarlama; 1 kesinlikle katılmıyorum - 7 kesinlikle katılıyorum). Bilimsel geçerliliği Türkçede sınanmadı; turlar arası kıyas için kullan.
 
@@ -196,7 +198,9 @@ Kural: **mümkün olan en erken** test et [Krug-DMMT s.157].
 
 | Durum | Test | Süre |
 |---|---|---|
+| Tasarıma başlamadan | **Gerçek ihtiyaç:** kullanıcının bugün işini hangi araçla, nasıl yaptığını yerinde gör [Norman-DOET s.47-49]; karmaşayı tanıma soruları ve niyet alıştırması (aşağıda) | 1 saat |
 | Tasarıma başlamadan | Rakip ürünü 3 kişiyle test et (Ö01, kendi ürünün yokken) [Krug-DMMT s.157] | 1 sabah |
+| Fikir, peçete eskizi | **Peçete eskizi testi:** kim olursa, 5 dakikadan kısa: "Bunun ne olduğunu düşünüyorsun?" Beğeni ya da görüş sorma, ne olduğunu çözmesini iste [Krug-RSME s.47-49] | 5 dk |
 | Eskiz, tel kafes, kâğıt prototip | Ö01 kâğıt ya da ekran görüntüsü üzerinde; bir önceki sürümü **ve** sıradakinin kâğıt prototipini aynı turda [Krug-RSME s.39-40] | yarım sabah |
 | Her arayüz değişikliği | Otomatik denetim: `denetle.mjs` (+ form değiştiyse `--etkilesim`), `statik.mjs` | 2 dk |
 | Yeni ekran ya da akış | Ö02 + Ö04 (tek başına, ekran görüntüsüyle) + uzman incelemesi (Ö01 hazırlık 8) | 5 dk |
@@ -206,3 +210,16 @@ Kural: **mümkün olan en erken** test et [Krug-DMMT s.157].
 | Yeniden tasarım | **Önce mevcut ürünü** test et (neyin çalıştığını bozmamak için) [Krug-DMMT s.157]; önce/sonra Ö01 aynı görevlerle + Ö06 eğilimi + taban çizgisi | 2 tur |
 | Yeterli trafik, iki seçenek | A/B testi, HEART metrikleriyle [Rodden-HEART s.1-3] | haftalar |
 | Kullanılabilirlik sorusu | **Odak grubu değil**, Ö01 [Krug-DMMT s.142-144] | |
+
+## Tasarıma başlamadan: karmaşayı tanı, niyeti yaz
+
+**Karmaşayı tanıma soruları** [Covert-IA s.28]: kullanıcılar kim, onları nasıl tanıyorsun, **karmaşayı kendi kelimeleriyle nasıl anlatıyorlar**; paydaşlar ve beklentileri; hangi bilgi var, hangisi eksik ve eksiklikten hangi yorum doğuyor; durum fazla mı, eksik mi, yanlış mı.
+
+**Niyet alıştırması** [Covert-IA s.48]: kullanıcıların ürünü tarif ederken kullanmasını istediğin **sıfatlar** ve kullanılmamasına razı olduğun sıfatlar. İki liste birbirini tekrarlamaz, birbirinin zıddı değildir, olumsuz sıfat yoktur: dışarıdan bakan hangisinin "iyi" liste olduğunu anlayamamalı. Ör. Örnek Uygulama: "sakin, güvenilir, sade, yol gösteren" / "kapsamlı, eğlenceli, sosyal, özelleştirilebilir". Her projenin `erisim/niyet.md` dosyasında durur; tasarım kararında iki seçenek arasında kalınca listeye bakılır.
+
+## Yolculuk haritası (yeni akış ya da yeniden tasarımda)
+
+Satırlar bağlam (ekran, kanal, kullanıcının durumu), noktalar olay [Covert-IA s.70-87]. Her olayın yanına kullanıcının duygusunu yaz ve iki noktayı işaretle [LawsOfUX: Peak-End]:
+1. **Zirve:** duygunun en yoğun olduğu an (ör. "Başvuruyu gönder"e basma). Olumsuzsa hafiflet: bekleme varsa ilerleme ve tahmini süre, belirsizlik varsa ne olacağını önceden söyle (S14).
+2. **Son:** akışın bittiği an. Açık bir başarı ekranı ve sonraki adım (S04, K07).
+İnsanlar deneyimi bu iki andan hatırlar; ortadaki küçük sürtünmeler yerine önce bunları düzelt.
