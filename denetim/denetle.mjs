@@ -81,7 +81,7 @@ async function sayfaOlc(tr, url, mod, klasor, sira, a) {
   try {
     const yanit = await p.goto(url, { waitUntil: "networkidle", timeout: 30000 }).catch(() => p.goto(url, { waitUntil: "load", timeout: 30000 }));
     await p.waitForTimeout(1500);
-    const sonuc = await p.evaluate(olc, { mod, sozluk: a.sozluk, esik: ESIK });
+    const sonuc = await p.evaluate(olc, { mod, sozluk: a.sozluk, esik: ESIK, anaYol: a.anaYol });
     sonuc.durum = yanit?.status() ?? 0;
     sonuc.mod = mod;
     if (mod === "masaustu" || sira === 0) {
@@ -97,12 +97,13 @@ async function sayfaOlc(tr, url, mod, klasor, sira, a) {
 }
 
 // Sayfalar arası kurallar: tutarlılık (S05), koku sürekliliği (K04), aynı başlık (K03).
-function sayfalarArasi(sonuclar) {
+function sayfalarArasi(sonuclar, anaYol = "/") {
+  const anaMi = (href) => { const y = new URL(href).pathname; return y === "/" || y === anaYol; };
   const bulgular = [];
   const masa = sonuclar.filter((s) => s.mod === "masaustu" && !s.hata);
   const hrefMetin = new Map();
   const sifirla = /^(tümü|hepsi|all|tüm .*)$/u;
-  for (const s of masa) for (const l of s.linkler.filter((l) => l.navda && new URL(l.href).pathname !== "/" && !sifirla.test(l.metin))) {
+  for (const s of masa) for (const l of s.linkler.filter((l) => l.navda && !anaMi(l.href) && !sifirla.test(l.metin))) {
     if (!hrefMetin.has(l.href)) hrefMetin.set(l.href, new Set());
     hrefMetin.get(l.href).add(l.metin);
   }
@@ -122,7 +123,7 @@ function sayfalarArasi(sonuclar) {
   const kopuk = [];
   for (const s of masa) for (const l of s.linkler) {
     const h = hedefler.get(l.href);
-    if (!h || h.url === s.url || new URL(l.href).pathname === "/") continue;
+    if (!h || h.url === s.url || anaMi(l.href)) continue;
     const k1 = kelimeler(l.metin), k2 = kelimeler([h.baslik, ...h.h1].join(" "));
     if (k1.size && ![...k1].some((w) => k2.has(w))) kopuk.push(`"${l.metin}" → varılan sayfa: "${h.h1[0] || h.baslik}"`);
   }
@@ -208,6 +209,9 @@ async function main() {
   a.sozluk = { ...sozluk, terimler: a.terimler ? JSON.parse(readFileSync(a.terimler, "utf8")) : null };
   const tabanYolu = resolve("erisim/taban.json");
   a.taban = !a.tabanYaz && existsSync(tabanYolu) ? JSON.parse(readFileSync(tabanYolu, "utf8")) : null;
+  // Kök "/" başka bir yola yönleniyorsa (ör. /burslar) orası ana sayfadır: logo oraya gidebilir. (Pilot kalibrasyonu: Örnek Uygulama)
+  a.anaYol = "/";
+  try { a.anaYol = new URL((await fetch(new URL("/", a.adresler[0]), { redirect: "follow" })).url).pathname; } catch { /* ağ yoksa "/" */ }
   if (a.terimler && !a.sessiz) console.log(`Terim sözlüğü: ${a.terimler}`);
   const klasor = resolve(a.cikti);
   mkdirSync(klasor, { recursive: true });
@@ -238,7 +242,7 @@ async function main() {
     }
   }
   await tr.close();
-  const { tum, puan, say } = raporYaz(a, sonuclar, sayfalarArasi(sonuclar), klasor);
+  const { tum, puan, say } = raporYaz(a, sonuclar, sayfalarArasi(sonuclar, a.anaYol), klasor);
   console.log(`\nPuan  B ${puan.B} · S ${puan.S} · K ${puan.K}   Kritik ${say("kritik")} · Uyarı ${say("uyari")} · Bilgi ${say("bilgi")}`);
   if (a.taban) console.log(`Taban (${a.taban.tarih}): B ${a.taban.puan.B} · S ${a.taban.puan.S} · K ${a.taban.puan.K}   Kritik ${a.taban.kritik}`);
   if (a.tabanYaz) {

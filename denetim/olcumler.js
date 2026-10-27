@@ -1,7 +1,8 @@
 // Tarayıcı içinde çalışır (page.evaluate). Tek sayfanın bulgularını döndürür.
 // Kural kimlikleri skill/erisilebilirlik/references/katalog.md ile aynıdır.
 // Eşikler "başlangıç eşiği"dir; pilot projelerle kalibre edilecek (YOL-HARITASI Faz 4).
-export function olc({ mod, sozluk, esik }) {
+// anaYol: kök adresin yönlendiği yol (ör. "/" → "/burslar"); oraya giden bağlantı da ana sayfa bağlantısıdır.
+export function olc({ mod, sozluk, esik, anaYol = "/" }) {
   const bulgular = [];
   const ekle = (kural, seviye, mesaj, ornekler = []) =>
     bulgular.push({ kural, seviye, mesaj, ornekler: ornekler.slice(0, 5) });
@@ -70,10 +71,10 @@ export function olc({ mod, sozluk, esik }) {
   else if (h1ler.length > 1) ekle("S08", "uyari", `${h1ler.length} adet h1 var: sayfanın tek bir adı olmalı`, h1ler.map(tanim));
   const anaSayfaLinki = [...document.querySelectorAll("a[href]")].some((a) => {
     const r = a.getBoundingClientRect();
-    try { const u = new URL(a.href); return u.origin === location.origin && (u.pathname === "/" || u.pathname === "") && r.top < 200 && gorunur(a); }
+    try { const u = new URL(a.href); return u.origin === location.origin && (u.pathname === "/" || u.pathname === "" || u.pathname === anaYol) && r.top < 200 && gorunur(a); }
     catch { return false; }
   });
-  if (!anaSayfaLinki && location.pathname !== "/")
+  if (!anaSayfaLinki && location.pathname !== "/" && location.pathname !== anaYol)
     ekle("K03", "uyari", "Üst bölümde ana sayfaya dönen logo/site adı bağlantısı yok");
 
   // ---------- S10: Navigasyonda bulunulan yer işaretli mi ----------
