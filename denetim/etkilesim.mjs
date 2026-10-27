@@ -2,6 +2,10 @@
 //   B08  boş gönderimde hata mesajı çıkıyor mu, alanın yanında mı
 //   B08  gönderim başarısız olunca girilen veri korunuyor mu
 //   S04  gönderime 1 sn içinde görünür tepki var mı
+//   S04  gönderim sürerken butona ikinci kez basılınca form iki kez gidiyor mu [Norman-DOET s.8]
+//   B09  açılır listeden seçim yapınca sayfa kendiliğinden değişiyor mu [COGA 4.9.1]
+//   S13  menüden başka sayfaya gidip geri tuşuna basınca aynı sayfaya dönülüyor mu [COGA 4.5.2]
+//   B16  o sırada forma yazılan bilgi geri gelince duruyor mu [COGA 4.5.2]
 //
 // GÜVENLİK: bu bağlamda sayfadan çıkan bütün yazma istekleri (GET/HEAD/OPTIONS dışındaki her yöntem)
 // ağ katmanında kesilir ve başka siteye yönlenme engellenir. Canlı sitede kayıt oluşmaz, e-posta gitmez,
@@ -13,9 +17,17 @@ const ORNEK = { email: "ornek@posta.test", tel: "0532 000 00 00", number: "5", u
 export async function etkilesimOlc(tr, url, a) {
   const ctx = await tr.newContext({ viewport: { width: 1366, height: 800 }, locale: "tr-TR", ...(a.oturum ? { storageState: a.oturum } : {}) });
   const koken = new URL(url).origin;
-  await ctx.route("**/*", (istek) => {
+  // Çift gönderim sayacı: aynı kökene giden, ölçüm/analitik olmayan yazma istekleri. geciktir > 0 iken kesme bekletilir
+  // ki ilk gönderim "sürüyor" olsun (yavaş ağ taklidi).
+  const ag = { yazma: 0, geciktir: 0 };
+  await ctx.route("**/*", async (istek) => {
     const r = istek.request();
-    if (!["GET", "HEAD", "OPTIONS"].includes(r.method())) return istek.abort("failed");
+    if (!["GET", "HEAD", "OPTIONS"].includes(r.method())) {
+      const u = new URL(r.url());
+      if (u.origin === koken && r.resourceType() !== "ping" && !/(_vercel|insights|vitals|analytics|monitoring|sentry|telemetry|beacon|collect)/i.test(u.pathname)) ag.yazma++;
+      if (ag.geciktir) await new Promise((t) => setTimeout(t, ag.geciktir));
+      return istek.abort("failed").catch(() => {});
+    }
     if (r.isNavigationRequest() && r.frame() === r.frame().page()?.mainFrame() && new URL(r.url()).origin !== koken) return istek.abort("blockedbyclient");
     return istek.continue();
   });
@@ -32,7 +44,9 @@ export async function etkilesimOlc(tr, url, a) {
       await p.waitForTimeout(600);
       if ((await p.evaluate(formlariIsaretle)) <= i) break;
       const bos = await gonder(p, i, false);
-      if (bos) {
+      // Gönderim başka adrese gittiyse (klasik form) sayfa değişmiştir, bu da tepkidir; ölçülecek metin yok.
+      // Bu koruma yokken yeniMetin tanımsız kalıyor ve sayfanın bütün etkileşim bulguları kayboluyordu.
+      if (bos && !bos.gitti) {
         const ad = bos.ad;
         if (bos.beklenenHata && !bos.yeniMetin.length && !bos.gecersizAlan && !bos.yerelGecersiz)
           ekle("B08", "uyari", "Zorunlu alanları boş form gönderildi, hiçbir hata mesajı görünmedi: kullanıcı neyin eksik olduğunu bilemez", [ad]);
@@ -41,7 +55,7 @@ export async function etkilesimOlc(tr, url, a) {
         else if (bos.yeniMetin.length && !bos.yakinda)
           ekle("B08", "bilgi", "Hata mesajı alanın yanında değil (sayfanın başka yerinde): kullanıcı hangi alanın sorunlu olduğunu aramak zorunda", [`${ad} → "${bos.yeniMetin[0].slice(0, 60)}"`]);
         // tepkiMs 0 olabilir (aynı karede tepki): "yok" yalnız null'dır.
-        if (bos.tepkiMs == null && !bos.yerelGecersiz && !bos.gitti)
+        if (bos.tepkiMs == null && !bos.yerelGecersiz)
           ekle("S04", "uyari", "Formu gönderince 1 sn içinde ekranda hiçbir şey değişmedi: kullanıcı bastı mı basmadı mı bilemez, tekrar basar", [ad]);
       }
       // 2 · Dolu gönderim (ağ hatası taklidi): veri korunuyor mu
@@ -51,9 +65,59 @@ export async function etkilesimOlc(tr, url, a) {
       const dolu = await gonder(p, i, true);
       if (dolu && !dolu.gitti && dolu.silinen.length)
         ekle("B08", "uyari", `Gönderim başarısız olunca (ağ hatası taklidi) girilen veri silindi (${dolu.silinen.length} alan): kullanıcı hepsini yeniden yazmak zorunda`, [`${dolu.ad}: ${dolu.silinen.join(", ")}`]);
+      // 3 · Çift gönderim: geri bildirimsiz kullanıcı komutu tekrarlar, işlem iki kez yapılır [Norman-DOET s.8]
+      await p.goto(url, { waitUntil: "load", timeout: 30000 }).catch(() => {});
+      await p.waitForTimeout(600);
+      if ((await p.evaluate(formlariIsaretle)) <= i) break;
+      const cift = await gonder(p, i, true, ag);
+      if (cift?.istek >= 2)
+        ekle("S04", "uyari", `Gönder butonuna art arda iki kez basınca form ${cift.istek} kez gönderildi: gönderim sürerken buton kilitlenmeli ("Gönderiliyor…")`, [cift.ad]);
+    }
+    // 4 · Açılır listeden seçim sayfayı değiştiriyor mu. Filtre (yalnız sorgu dizgisi değişir) sayılmaz, sayfa yolu değişmeli.
+    await p.goto(url, { waitUntil: "load", timeout: 30000 }).catch(() => {});
+    await p.waitForTimeout(600);
+    const listeSayisi = await p.evaluate(listeleriIsaretle);
+    for (let j = 0; j < Math.min(listeSayisi, 3); j++) {
+      if (j > 0) {
+        await p.goto(url, { waitUntil: "load", timeout: 30000 }).catch(() => {});
+        await p.waitForTimeout(600);
+        if ((await p.evaluate(listeleriIsaretle)) <= j) break;
+      }
+      const liste = p.locator(`[data-erisim-liste="${j}"]`);
+      const secim = await liste.evaluate((s) => {
+        const o = [...s.options].find((o, k) => k !== s.selectedIndex && !o.disabled);
+        return o ? { deger: o.value, ad: s.name || s.id || s.getAttribute("aria-label") || "açılır liste" } : null;
+      }).catch(() => null);
+      if (!secim) continue;
+      const yol = new URL(p.url()).pathname;
+      await liste.selectOption(secim.deger, { timeout: 2000 }).catch(() => {});
+      await p.waitForTimeout(1500);
+      const yeni = new URL(p.url()).pathname;
+      if (yeni !== yol) ekle("B09", "uyari", "Açılır listeden seçim yapınca sayfa kendiliğinden değişti: seçenekleri gözden geçiren kişi kendini başka sayfada bulur. Seçimi bir butonla onaylat",
+        [`liste "${secim.ad}": ${yol} → ${yeni}`]);
+    }
+    // 5 · Geri tuşu: forma bir şey yazıp menüden başka sayfaya git, geri gel. Aynı sayfa ve yazılan bilgi yerinde mi?
+    await p.goto(url, { waitUntil: "load", timeout: 30000 }).catch(() => {});
+    await p.waitForTimeout(600);
+    const geri = await p.evaluate(geriHazirla).catch(() => null);
+    if (geri) {
+      const bas = p.url();
+      await p.locator("[data-erisim-git]").first().click({ timeout: 3000 }).catch(() => {});
+      await p.waitForTimeout(1500);
+      // Uygulama "kaydedilmemiş değişiklik" diye sayfada tuttuysa (onay penceresi kapatılır) geri tuşu sınanmaz: bu doğru davranış.
+      if (p.url() !== bas) {
+        await p.goBack({ waitUntil: "load", timeout: 15000 }).catch(() => {});
+        await p.waitForTimeout(1200);
+        const son = p.url();
+        if (son.split("#")[0] !== bas.split("#")[0])
+          ekle("S13", "uyari", "Geri tuşu önceki sayfaya dönmüyor: kullanıcı yanlış tıklamasını düzeltemez", [`${new URL(bas).pathname} → ${geri.hedef} → geri → ${new URL(son).pathname}`]);
+        else if (geri.alan && (await p.evaluate((s) => document.querySelector(s)?.value ?? null, geri.alan).catch(() => null)) === "")
+          ekle("B16", "bilgi", "Forma yazıp başka sayfaya gidince ve geri gelince yazılan bilgi kayboldu: yarım formu taslak olarak sakla", [geri.alan]);
+      }
     }
   } catch (h) {
-    return { url, mod: "etkilesim", hata: String(h.message || h).split("\n")[0], bulgular: [], linkler: [] };
+    // Sonraki adımdaki hata öncekilerin bulgularını silmesin.
+    return { url, mod: "etkilesim", hata: String(h.message || h).split("\n")[0], bulgular, linkler: [] };
   } finally {
     await ctx.close();
   }
@@ -74,7 +138,41 @@ function formlariIsaretle() {
   return formlar.length;
 }
 
-async function gonder(p, i, doldur) {
+// Sayfadaki seçilebilir açılır listeleri işaretler, sayısını döndürür (tarayıcıda çalışır).
+function listeleriIsaretle() {
+  const gorunur = (e) => { const r = e.getBoundingClientRect(); return r.width > 1 && r.height > 1 && getComputedStyle(e).visibility !== "hidden"; };
+  document.querySelectorAll("[data-erisim-liste]").forEach((s) => s.removeAttribute("data-erisim-liste"));
+  const listeler = [...document.querySelectorAll("select")].filter((s) => gorunur(s) && !s.disabled && s.options.length > 1);
+  listeler.forEach((s, i) => s.setAttribute("data-erisim-liste", String(i)));
+  return listeler.length;
+}
+
+// Geri tuşu senaryosu: ilk metin alanına yazar, menüdeki başka bir sayfaya giden bağlantıyı işaretler (tarayıcıda çalışır).
+// Yalnız menü/üst bölüm bağlantısı seçilir; çıkış ve silme adresleri atlanır.
+function geriHazirla() {
+  const gorunur = (e) => { const r = e.getBoundingClientRect(); return r.width > 1 && r.height > 1 && getComputedStyle(e).visibility !== "hidden"; };
+  const a = [...document.querySelectorAll("nav a[href], header a[href], [role=navigation] a[href]")].find((a) => {
+    if (!gorunur(a) || a.target === "_blank" || a.hasAttribute("download")) return false;
+    try { const u = new URL(a.href); return u.origin === location.origin && u.pathname !== location.pathname && !/(cikis|logout|signout|sil|delete)/i.test(u.pathname); }
+    catch { return false; }
+  });
+  if (!a) return null;
+  a.setAttribute("data-erisim-git", "1");
+  const g = [...document.querySelectorAll("form input:not([type]), form input[type=text], form textarea")]
+    .find((e) => gorunur(e) && !e.readOnly && !e.disabled && !e.closest("[role=search], search"));
+  let alan = null;
+  if (g && (g.id || g.name)) {
+    const ayarla = Object.getOwnPropertyDescriptor(g.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype, "value").set;
+    ayarla.call(g, "Geri tuşu denemesi");
+    g.dispatchEvent(new Event("input", { bubbles: true }));
+    alan = g.id ? `#${CSS.escape(g.id)}` : `[name="${CSS.escape(g.name)}"]`;
+  }
+  return { alan, hedef: new URL(a.href).pathname };
+}
+
+// cift verilirse (ağ sayacı) form bir kez doldurulur, gönder butonuna 150 ms arayla iki kez gerçek tıklama yapılır,
+// yazma istekleri 2 sn bekletilir ve kaç istek çıktığı döner.
+async function gonder(p, i, doldur, cift = null) {
   const once = await p.evaluate(({ i, doldur, ORNEK }) => {
     const f = document.querySelector(`[data-erisim-form="${i}"]`);
     if (!f) return null;
@@ -111,6 +209,20 @@ async function gonder(p, i, doldur) {
     return { ad: `form "${baslik.trim().slice(0, 40)}"`, doldurulan, beklenenHata, yerelGecersiz, adres: location.href };
   }, { i, doldur, ORNEK });
   if (!once) return null;
+  if (cift) {
+    await p.waitForTimeout(300); // doldururken çıkan taslak kaydı sayılmasın
+    const dugme = p.locator(`[data-erisim-form="${i}"] :is(button:not([type=button]):not([type=reset]), input[type=submit])`).first();
+    if (!(await dugme.count())) return null;
+    const bas = cift.yazma;
+    cift.geciktir = 2000;
+    await dugme.click({ timeout: 2000 }).catch(() => {});
+    await p.waitForTimeout(150);
+    // Kilitlenmiş (disabled) butona tıklama olay üretmez; doğru davranış budur.
+    await dugme.click({ timeout: 1000, force: true }).catch(() => {});
+    await p.waitForTimeout(2600);
+    cift.geciktir = 0;
+    return { ad: once.ad, istek: cift.yazma - bas };
+  }
   await p.evaluate((i) => {
     window.__erisimTik = performance.now();
     const f = document.querySelector(`[data-erisim-form="${i}"]`);

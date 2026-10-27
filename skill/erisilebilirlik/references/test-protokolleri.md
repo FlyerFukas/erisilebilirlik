@@ -3,8 +3,10 @@
 Otomatik denetim kural ihlalini bulur; **anlaşılırlığı** yalnız insan gösterir. Bu protokoller ucuz, hızlı ve tek kişilik ekipte uygulanabilir olacak şekilde seçildi. Kural kimlikleri `katalog.md` ile aynıdır.
 
 İki altın kural:
-- **İzle, sorma.** Test, insanların ürünü kullanmaya çalışmasını izlemektir; fikir toplamak değil [Krug-RSME s.23].
+- **İzle, sorma.** Test, insanların ürünü kullanmaya çalışmasını izlemektir; fikir toplamak değil [Krug-RSME s.23]. **Odak grubu kullanılabilirlik testi değildir:** 5-10 kişinin fikir ve duygusunu konuşması planlamada "ne isteniyor"u anlamaya yarar; ürünün **işe yarayıp yaramadığını** yalnız tek kişinin tipik görevi yapmaya çalışmasını izlemek gösterir [Krug-DMMT s.142-144]. Anket ve görüşme de görüş toplar, kullanımı göstermez [Krug-RSME s.23].
 - **Kullanıcı suçlanmaz.** Takıldığı her yer ürünün kusurudur [Norman-DOET s.51], [Krug-DMMT s.159-168].
+
+Otomatik denetim ve uzman incelemesi testin **yerini tutmaz**: otomatik test bilişsel kullanılabilirliği ölçemez [COGA 5.1].
 
 ---
 
@@ -27,11 +29,15 @@ Otomatik denetim kural ihlalini bulur; **anlaşılırlığı** yalnız insan gö
 5. **Kısıtlar:** arama test edilmiyorsa "aramayı kullanmadan"; "bu sitede kal" [Krug-RSME s.68].
 6. **Pilot (15 dk):** senaryoları evden birine oku; açık, eksiksiz, tek anlamlı mı. Senaryoları ayrı kâğıtlara, büyük puntoyla, **numarasız** yaz (sırayı değiştirebilesin) [Krug-RSME s.68-69].
 7. **Ortam:** sessiz oda, bildirimler kapalı, tarayıcı geçmişi temiz (ziyaret edilmiş bağlantı rengi ipucu verir), nötr bir sayfa açık, kayıt yazılımı denendi [Krug-RSME s.71-75]. Kaygı sezgiyi bozar; rahat ortam [Blackler-2010].
+8. **Önce uzman incelemesi:** test edilecek ekranları Nielsen'in 10 ilkesi ve bu katalogla gözden geçir (Claude bunu `erisilebilirlik` skill'iyle ve otomatik denetimle yapar). Nielsen'in ilkeleri tam da bu sezgisel değerlendirme için yazıldı [Nielsen-10 s.1]. Krug'un sırası: önce uzman incelemesi, sonra testi kendin yap [Krug-RSME s.15]. Bariz bulguları testten önce düzelt ki 3 kişinin sabahı bilinen sorunlara gitmesin (önerimiz).
 
 ### 2. Katılımcı
 - Hedef kitleye yakın 3 kişi; **ürünü görmemiş** olsun. Arkadaş olabilir, geliştirici olamaz: geliştirici kendi ürününün en kötü test kullanıcısıdır [Norman-DOET s.171-173].
 - Teknoloji aşinalığı **farklı** olsun; yalnız teknoloji meraklısı arkadaşlarla test etme [Blackler-2010]. Her turda bir "yabancı" [Krug-RSME s.55-56].
 - Kendi kurduğun ölçüte takılma: "Bizim kullanıcımız da buna takılır mıydı?" sorusuyla eğriye göre notla [Krug-DMMT s.105].
+- **Nereden bulunur:** tanıdıklar, sosyal medya grupları; hedef kitleden olanlar önce. Küçük bütçeyle de mümkün [COGA 5.2].
+- **Bilişsel yükü en çok hissedeni de çağır:** turlarda bir kez okuma ya da dikkat güçlüğü yaşayan (disleksi, DEHB) ya da unutkanlık yaşayan bir katılımcı [COGA 5.2]. Hedef engellilik testi değil, ürünün yorgun, dikkati dağınık ya da acele eden herkes için anlaşılır olduğunu görmek (önerimiz, tanımımız: bilişsel yük + sezgisel etkileşim + bilgi kokusu).
+- **Yedek katılımcı** ayarla: gelmeyen olursa yakındaki biri ya da uzaktan bir gerçek kullanıcı [Krug-RSME s.62].
 
 ### 3. Oturum akışı (kişi başı ~30 dk)
 
@@ -58,6 +64,8 @@ Otomatik denetim kural ihlalini bulur; **anlaşılırlığı** yalnız insan gö
 
 (Kendi metnimiz; Krug-RSME s.81-91'deki akışa ve COGA 5.4.1'deki "kullanıcı kendini suçlamasın" ilkesine dayanır. Metinde "görüş", "geri bildirim" kelimeleri bilerek yok: katılımcıyı fikir vermeye yöneltir.)
 
+**Anlaşılır onam** [COGA 5.3]: ne için yapıldığını, ne yapacağını, varsa riski, hangi kişisel verinin (ses, ekran) kaydedileceğini ve her an bırakabileceğini söyle. Anladığını bir soruyla doğrula: "Kaydı ne için kullanacağımı bana bir cümleyle söyler misin?" Notlarda ve kayıtlarda ad yerine takma ad.
+
 ### 4. Oturumu yönetmek
 - **Sesli düşünme:** ne düşündüğünden emin değilsen sor: "Ne düşünüyorsun?", "Neye bakıyorsun?", "Ne bekliyordun?" Okuyorsa ya da emin ilerliyorsa bırak [Krug-RSME s.92].
 - **Tarafsız kal:** ne yapacağını söyleme, ipucu verme (ince olanı da); soruyu soruyla cevapla ("Sen olsan ne yapardın?"); poker yüzü, hafif memnun [Krug-RSME s.92-95].
@@ -73,7 +81,7 @@ Otomatik denetim kural ihlalini bulur; **anlaşılırlığı** yalnız insan gö
 |---|---|
 | Görev | kısa ad |
 | Sonuç | ✓ tamamladı · ~ yardımla · ✗ yapamadı |
-| Süre | gerçek süre (dk:sn) |
+| Süre | gerçek süre (dk:sn); mutlak değil **görevler arası göreli** süreye bak [COGA 5.4] |
 | İlk tık doğru mu | evet/hayır (Ö03) |
 | Kolaylık 1-7 | Ö05 |
 | Tahmini süre | "Ne kadar sürdü sence?" (Ö07) |
@@ -103,6 +111,11 @@ Otomatik denetim kural ihlalini bulur; **anlaşılırlığı** yalnız insan gö
 ### 7. Kayıt
 Projenin `HANDOFF.md` günlüğüne tek satır: tarih · görev başarı oranı · ortalama kolaylık · ortalama algılanan süre oranı · düzeltilen 3 sorun. Bir sonraki tur aynı görevlerle yapılır, kıyas mümkün olsun.
 
+### 8. Uzaktan varyant (tek kişilik ekip, katılımcı başka şehirde)
+Yüz yüze testin yaklaşık **%80 faydası, %70 emeği**; aynı odada olmanın zenginliği, netleştirme ve kontrol (kesinti) kaybolur [Krug-RSME s.149-150]. İlk birkaç tur (yaklaşık 3 aylık) yüz yüze, sonra uzaktan [Krug-RSME s.154].
+- **Moderatörlü:** katılımcı **kendi bilgisayarından** ya da telefonundan ürüne girer, sen ekran paylaşımıyla izlersin (gecikme onu etkilemesin). Paylaşım yazılımı katılımcı için 1 dakikadan kısa sürede kurulmalı; e-postasını ve bildirimlerini gizlemesini söyle [Krug-RSME s.151]. Akış, karşılama metni ve gözlem formu aynıdır; onamı kayıttan önce yine sesli al.
+- **Moderatörsüz:** adres + 1-2 kısa görev + katılımcı profili; katılımcı ~15 dakikalık sesli düşünme kaydı gönderir. Soru soramazsın ama ucuz ve hızlı; aylık turda yer bulamayan sorular ve **düzeltme sonrası hızlı yeniden test** için ideal [Krug-RSME s.152-154], [Krug-DMMT s.170-171].
+
 ---
 
 ## Ö02 · 5 saniye testi
@@ -117,6 +130,7 @@ Rastgele, tercihen derin bir iç sayfa aç. Gözünü kıs ya da ekranı kol boy
 
 ## Ö05 · Algılanan kolaylık (tek başına kanıt değil)
 Her görevden **hemen sonra**: "Bu görev ne kadar kolaydı?" 1 (çok zor) - 7 (çok kolay). Görev ortalaması 5,5 altıysa görev yeniden tasarlanır.
+Sayılı ölçek katılımcıyı zorluyorsa (okuma güçlüğü, yorgunluk): **5 yüzlü gülen yüz ölçeği** ya da üç seçenek, "çok beğendim / idare eder / hiç beğenmedim" [COGA 5.4.1].
 
 **Uyarı:** öz bildirim güvenilmez. Neredeyse ağlayacak kadar zorlanan kişi 7 üzerinden "6" verebilir [Krug-RSME s.99]; günler sonra sorulan memnuniyet daha olumlu çıkar [Weinschenk-100 #83]. Puanı **gözlenen başarı ve hata ile birlikte** yorumla; "puan yüksek, geçti" deme.
 
@@ -152,6 +166,7 @@ Canlı üründe, analitikle. Her boyut için **Hedef → Sinyal → Metrik**:
 | Bağlılık | Düzenli kullansınlar | Oturum | Haftalık aktif gün, kullanıcı başı |
 
 **Erişilebilirlik sinyal seti** (önerimiz): formda hata gösterim oranı · adım bazında terk · geri al/iptal oranı · aynı sayfada 3+ geri-ileri gezinme ("kaybolma") · boş dönen arama oranı · kilit görevi ilk oturumda tamamlama oranı · yardım/iletişim sayfasına gelişten önceki sayfa (nerede takılıyorlar).
+**A/B testi:** iki arayüz seçeneği, benzer iki kullanıcı grubuna verilir ve HEART metrikleriyle kıyaslanır. Örnek: Google Haritalar tek arama kutusunu çift kutuya karşı denedi, hata oranlarını kıyasladı [Rodden-HEART s.1-3]. Yalnız iki grubu ayırmaya yetecek trafikte anlamlıdır; az kullanıcılı üründe Ö01 ve düzeltme sonrası koridor testi daha çok şey söyler (önerimiz).
 Erişilebilirlik için birincil metrik **görev başarısı**; diğerleri onun sonucudur. Yeniden tasarımdan sonra ilk hafta düşüş normaldir (değişime direnç); karar için eğilimi bekle (S15). Analitik **ne** olduğunu söyler, **neden** olduğunu söylemez: nedeni Ö01 gösterir [Krug-RSME s.29-30].
 
 ## Ö07 · Algılanan süre [Trukenbrod-2020]
@@ -177,10 +192,17 @@ Kullanıcı uzun ama anlamlı işi cezalandırmaz; **kötü kullanılabilirlikte
 
 ## Hangi test, ne zaman
 
+Kural: **mümkün olan en erken** test et [Krug-DMMT s.157].
+
 | Durum | Test | Süre |
 |---|---|---|
-| Her arayüz değişikliği | Otomatik denetim (`denetle.mjs`) | 2 dk |
-| Yeni ekran ya da akış | Ö02 + Ö04 (tek başına, ekran görüntüsüyle) | 5 dk |
+| Tasarıma başlamadan | Rakip ürünü 3 kişiyle test et (Ö01, kendi ürünün yokken) [Krug-DMMT s.157] | 1 sabah |
+| Eskiz, tel kafes, kâğıt prototip | Ö01 kâğıt ya da ekran görüntüsü üzerinde; bir önceki sürümü **ve** sıradakinin kâğıt prototipini aynı turda [Krug-RSME s.39-40] | yarım sabah |
+| Her arayüz değişikliği | Otomatik denetim: `denetle.mjs` (+ form değiştiyse `--etkilesim`), `statik.mjs` | 2 dk |
+| Yeni ekran ya da akış | Ö02 + Ö04 (tek başına, ekran görüntüsüyle) + uzman incelemesi (Ö01 hazırlık 8) | 5 dk |
 | Önemli sürüm öncesi | Ö01 (3 kişi) + Ö03 + Ö05 + Ö08 | 1 sabah |
+| Düzeltme sonrası doğrulama | Çoğu zaman bakınca anlaşılır; emin değilsen **koridor testi** (birine yalnız ilgili görevi yaptır), uzaktan tek kullanıcı ya da moderatörsüz test [Krug-RSME s.129-130, s.152-154] | 15 dk |
 | Canlı ürün, ayda bir | Ö06 sinyalleri + Ö01 | 1 sabah |
-| Yeniden tasarım | Önce/sonra Ö01 aynı görevlerle + Ö06 eğilimi + taban çizgisi | 2 tur |
+| Yeniden tasarım | **Önce mevcut ürünü** test et (neyin çalıştığını bozmamak için) [Krug-DMMT s.157]; önce/sonra Ö01 aynı görevlerle + Ö06 eğilimi + taban çizgisi | 2 tur |
+| Yeterli trafik, iki seçenek | A/B testi, HEART metrikleriyle [Rodden-HEART s.1-3] | haftalar |
+| Kullanılabilirlik sorusu | **Odak grubu değil**, Ö01 [Krug-DMMT s.142-144] | |

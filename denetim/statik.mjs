@@ -73,6 +73,18 @@ const KURAL = [
     (m, _, d) => ARAYUZ.test(d)],
   ["S06", "uyari", new RegExp(String.raw`<button\b(?![^>]*aria-label)${OZ}>\s*<(svg|[A-Z]\w*Icon)\b(?:[^]*?<\/\1>|${OZ}\/>)\s*<\/button>`, "g"), "Yalnız ikonlu, adı olmayan buton",
     (m, _, d) => ARAYUZ.test(d) && !/aria-label|title=/.test(m[0])],
+  // Bağlantı gezinir, buton iş yapar [COGA 4.2.2]: sayfa değiştiren buton yeni sekmede açılamaz, adresi görünmez.
+  ["S02", "bilgi", new RegExp(String.raw`<(button|Button)\b${OZ}>`, "g"), "Buton sayfa değiştiriyor: gezinme için bağlantı (<Link>/<a>) kullan, yeni sekmede açılabilsin",
+    (m, _, d) => ARAYUZ.test(d) && /onClick=\{[^]*?(router\.(push|replace)\(|navigate\(|location\.(href|assign)|window\.location\s*=)/.test(m[0])],
+  // Açılır listede seçim bağlamı değiştirmez [COGA 4.9.1]. Filtre güncellemesi de bu kalıba uyar, ayrımı --etkilesim yapar: bilgi.
+  ["B09", "bilgi", new RegExp(String.raw`<(select|Select)\b${OZ}>`, "g"), "Açılır listede seçim sayfayı değiştiriyor ya da formu gönderiyor: filtreyse sorun yok, başka sayfaya gidiyorsa seçimi bir butonla onaylat",
+    (m, _, d) => ARAYUZ.test(d) && /onChange=\{[^]*?(router\.(push|replace)\(|navigate\(|location\.(href|assign)|requestSubmit\(|\.submit\(\))/.test(m[0])],
+  // Kendiliğinden dönen slayt [COGA 4.6.1], [Krug-DMMT s.62-63]: slayt kütüphanesinin autoplay ayarı (video değil).
+  ["B09", "uyari", /\bautoplay\s*[=:]\s*\{?\s*(?:true|\{|\d)|\bAutoplay\(/gi, "Kendiliğinden dönen slayt: okumaya başlayan kişinin önünden içerik kayıp gider. Slaytı kullanıcı ilerletsin",
+    (m, metin) => /swiper|slick|embla|splide|keen-slider|carousel|glide/i.test(metin) && !/^<video/i.test(etiketi(metin, m.index))],
+  // Sağ tık menüsü sayfa genelinde engelli [COGA 4.9.2]. Tek öğedeki (harita, tuval) özel menü sayılmaz.
+  ["S01", "uyari", /(document|window)\.addEventListener\(\s*["']contextmenu["']|oncontextmenu\s*=\s*["']\s*return false/gi, "Sağ tık menüsü sayfa genelinde engelleniyor: kopyala, çevir, yazım denetimi çalışmaz",
+    (m, metin) => /return false/.test(m[0]) || /preventDefault/.test(metin.slice(m.index, m.index + 300))],
 ];
 // Önceden işaretli pazarlama izni: checkbox 3 satır çevresinde pazarlama kelimesiyle birlikte varsayılan işaretli.
 const IZIN = new RegExp(sozluk.pazarlama_onay.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "iu");

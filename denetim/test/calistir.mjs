@@ -18,7 +18,9 @@ const eksik = Object.keys(KURALLAR).filter((id) => !new RegExp(`^### ${id}\\b`, 
 dogrula(!eksik.length, `her denetim kuralı katalogda var${eksik.length ? ": eksik " + eksik.join(",") : ""}`);
 
 const sunucu = createServer((istek, yanit) => {
-  const ad = istek.url === "/" ? "iyi.html" : istek.url.slice(1);
+  // Ana sayfaya özgü denetimler için başka bir sınama sayfası da kökte açılabilir: /?sayfa=kotu4.html
+  const u = new URL(istek.url, "http://yerel");
+  const ad = u.pathname === "/" ? u.searchParams.get("sayfa") || "iyi.html" : u.pathname.slice(1);
   try { const icerik = readFileSync(join(BURASI, ad)); yanit.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end(icerik); }
   catch { yanit.writeHead(404).end("<title>Bulunamadı</title><h1>Bulunamadı</h1>"); }
 }).listen(0);
@@ -59,13 +61,28 @@ for (const [kural, parca] of [["B13", "dili belirtilmemiş"], ["S08", "belirgin 
   dogrula(mesajVar(kotu2, kural, parca), `kotu2.html → ${kural} "${parca}"`);
 }
 dogrula(!mesajVar(kotu2, "K10", "hiçbirinde yardım"), "kotu2.html → e-posta bağlantısı yardım sayılıyor (K10 site geneli yok)");
+// Katalog v0.4: kaynak notlarındaki otomasyon sözleri. kotu4 kökte (ana sayfa), kotu3 ikinci sayfa (sayfalar arası kıyas).
+const kotu34 = await denetle("?sayfa=kotu4.html", ["/kotu3.html"]);
+for (const [kural, parca] of [["B02", "araç bağlantısı"], ["S16", "(title"], ["S16", "Alt menü"], ["S06", "Alt metni olmayan"], ["S01", "Ana içeriğe geç"],
+  ["S10", "Ziyaret edilen"], ["K03", "slogan"], ["K06", "talimat"], ["S02", "iş yapan bağlantı"], ["S02", "Adresi olmayan"], ["S02", "Buton gibi görünen"],
+  ["S01", "alanlarının üstünde"], ["B10", "kaçıncı adımda"], ["B01", "ilk ekranda değil"], ["S03", "gönder butonu ekranın altında"], ["B10", "bölümsüz video"],
+  ["B04", "virgül"], ["B04", "Edilgen geniş zaman"], ["S08", "ara başlık yok"], ["B06", "zorunlu olduğu belli değil"], ["B07", "uzunluk sınırı dar"],
+  ["S01", "Sağ tık"], ["B18", "Kırmızı ile mavi"], ["B18", "el yazısı"], ["S08", "neredeyse hizalı"], ["B09", "dönen slayt"],
+  ["S12", "yazı boyutu ayarı"], ["S12", "Yazı büyütülünce"], ["S05", "Aynı adlı buton"]]) {
+  dogrula(mesajVar(kotu34, kural, parca), `kotu3 + kotu4 → ${kural} "${parca}"`);
+}
+dogrula(!kotu34.bulgular.some((b) => b.kural === "B04" && b.mesaj.includes("Edilgen geniş zaman") && b.ornekler.some((o) => /bilir$/.test(o))),
+  "\"-ebilir\" yeterlilik eki (gecikebilir, olabilir) edilgen sayılmıyor");
 const yok = await denetle("olmayan-sayfa.html");
 dogrula(yok.bulgular.some((b) => b.kural === "K03" && b.seviye === "kritik" && b.mesaj.includes("HTTP 404")), "olmayan sayfa → K03 kritik \"HTTP 404\" (hata sayfası 100 puan almaz)");
 // Etkileşim senaryosu (--etkilesim): yazma istekleri kesilir, form gerçekten gönderilir.
 const formKotu = await denetle("form-kotu.html", ["--etkilesim"]);
-for (const [kural, parca] of [["B08", "hiçbir hata mesajı görünmedi"], ["B08", "girilen veri silindi"], ["B08", "doğrulama balonu"], ["S04", "1 sn içinde"]]) {
+for (const [kural, parca] of [["B08", "hiçbir hata mesajı görünmedi"], ["B08", "girilen veri silindi"], ["B08", "doğrulama balonu"], ["S04", "1 sn içinde"],
+  ["S04", "iki kez basınca"], ["B09", "Açılır listeden seçim"], ["B16", "geri gelince"]]) {
   dogrula(mesajVar(formKotu, kural, parca), `form-kotu.html (etkileşim) → ${kural} "${parca}"`);
 }
+const geriKotu = await denetle("geri-kotu.html", ["--etkilesim"]);
+dogrula(mesajVar(geriKotu, "S13", "Geri tuşu önceki sayfaya dönmüyor"), "geri-kotu.html (etkileşim) → S13 \"Geri tuşu önceki sayfaya dönmüyor\"");
 const formIyi = await denetle("form-iyi.html", ["--etkilesim"]);
 const formIyiSorun = formIyi.bulgular.filter((b) => b.sayfalar.some((y) => y.includes("etkileşim")));
 dogrula(formIyiSorun.length === 0, `form-iyi.html (etkileşim) bulgu vermiyor${formIyiSorun.length ? ": " + formIyiSorun.map((b) => b.kural + " " + b.mesaj).join(" | ") : ""}`);
@@ -84,6 +101,9 @@ for (const beklenen of ["K01:kritik", "K01:uyari", "B11:kritik", "B13:uyari", "B
 }
 dogrula(sKotu.bulgular.some((b) => b.kural === "B12" && b.mesaj.includes("canlıda İngilizce")), "statik/kotu → B12 setHata((e as Error).message)");
 dogrula(sKotu.bulgular.some((b) => b.yer.startsWith("HataGoster.tsx") && b.seviye === "bilgi"), "statik/kotu → B12 ${(e as Error).message} şablonu");
+for (const [kural, parca] of [["S02", "Buton sayfa değiştiriyor"], ["B09", "Açılır listede seçim"], ["B09", "dönen slayt"], ["S01", "Sağ tık"]]) {
+  dogrula(sKotu.bulgular.some((b) => b.kural === kural && b.mesaj.includes(parca)), `statik/kotu → ${kural} "${parca}"`);
+}
 dogrula(sKotu.kod === 1, "statik/kotu kritik bulguda çıkış kodu 1");
 const sIyi = await statik("iyi");
 dogrula(sIyi.kod === 0 && sIyi.bulgular.length === 0, `statik/iyi bulgu vermiyor${sIyi.bulgular.length ? ": " + sIyi.bulgular.map((b) => b.kural + " " + b.ornek).join(" | ") : ""}`);

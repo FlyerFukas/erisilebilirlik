@@ -102,13 +102,14 @@ export function olc({ mod, sozluk, esik, anaYol = "/" }) {
 
   // ---------- B01: Tek birincil eylem ----------
   const sayfaZemin = rgb(getComputedStyle(document.body).backgroundColor) || { r: 255, g: 255, b: 255, a: 1 };
-  const dolgulu = ilkEtk.filter((el) => {
+  const birincilGibi = (el) => {
     if (!el.matches("button, a, [role=button], input[type=submit], input[type=button]")) return false;
     const s = getComputedStyle(el), z = rgb(s.backgroundColor), r = el.getBoundingClientRect();
     if (!z || z.a < 0.6 || r.height < 28 || r.width < 60) return false;
     const fark = Math.abs(z.r - sayfaZemin.r) + Math.abs(z.g - sayfaZemin.g) + Math.abs(z.b - sayfaZemin.b);
     return doygunluk(z) > 0.3 && fark > 120;
-  });
+  };
+  const dolgulu = ilkEtk.filter(birincilGibi);
   if (dolgulu.length > 1) {
     const renkler = new Set(dolgulu.map((e) => getComputedStyle(e).backgroundColor));
     ekle("B01", dolgulu.length > 3 ? "uyari" : "bilgi",
@@ -680,13 +681,218 @@ export function olc({ mod, sozluk, esik, anaYol = "/" }) {
     if (zorunlu.length > 3) ekle("K10", "uyari", `İletişim/geri bildirim formunda ${zorunlu.length} zorunlu alan: takılan kişiden önce bilgi istiyorsun. En çok 3 (ör. e-posta ve mesaj)`, [tanim(f)]);
   }
 
+  // ================= Katalog v0.4: kaynak notlarındaki otomasyon sözleri =================
+  // Her denetimin yanında notun kaynağı var. Sezgiye dayananlar (YARI) bilgi düzeyinde kalır, puanı etkilemez.
+  const formAlanlari = (f) => [...f.querySelectorAll("input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=reset]):not([type=checkbox]):not([type=radio]), select, textarea")].filter(gorunur);
+  const gonderDugmesi = (f) => [...f.querySelectorAll("button:not([type=button]):not([type=reset]), input[type=submit]")].find(gorunur);
+  const cssKurallari = [];
+  let okunamayanCss = 0;
+  const kuralTopla = (liste) => { for (const k of liste) { if (k.selectorText) cssKurallari.push(k); if (k.cssRules?.length) kuralTopla(k.cssRules); } };
+  for (const ss of document.styleSheets) { try { kuralTopla(ss.cssRules); } catch { okunamayanCss++; /* başka kökenli stil sayfası okunamaz */ } }
+
+  // ---------- B02: Kalıcı gezinme en çok 4-5 araç taşır [Krug-DMMT s.100-101] ----------
+  const araclar = etkilesimli.filter((e) => e.matches("a, button, [role=button]") && !e.closest("main, article, form, footer") &&
+    (e.closest("header, [role=banner]") || e.getBoundingClientRect().top < 100) && listede(sozluk.arac, ad(e) || erisimAdi(e)));
+  if (araclar.length > 5) ekle("B02", "uyari", `Üst bölümde ${araclar.length} araç bağlantısı (giriş, yardım, iletişim...): kalıcı gezinme en çok 4-5 araç taşır, az kullanılanları altbilgiye taşı`, araclar.map(tanim));
+
+  // ---------- S16: Fare yoksa üzerine gelme de yok [Krug-DMMT s.187-188], [COGA 4.3.2] ----------
+  // S06 yazısız ikon butonu zaten yakalar; burada görünen metni olan öğenin title'ı fazladan bilgi taşıyor.
+  const yalnizTitle = [...document.querySelectorAll("[title]")].filter((e) => {
+    if (/^(ABBR|IFRAME|LINK|STYLE)$/.test(e.tagName) || !gorunur(e)) return false;
+    const t = kucuk(e.getAttribute("title")), gorunen = kucuk(`${e.innerText || ""} ${e.value || ""}`);
+    return t.split(" ").length >= 2 && gorunen && !gorunen.includes(t);
+  });
+  if (yalnizTitle.length) ekle("S16", "bilgi", `Bilgi yalnız fareyle üzerine gelince görünüyor (title, ${yalnizTitle.length}): dokunmatikte ve klavyede hiç görünmez. Gerekliyse metne yaz`,
+    yalnizTitle.map((e) => `${tanim(e)} title="${e.getAttribute("title").slice(0, 60)}"`));
+  const hoverMenu = new Set();
+  for (const k of cssKurallari) {
+    if (!/:hover\s*[>+~ ]/.test(k.selectorText)) continue;
+    const s = k.style;
+    if (!(s.display && s.display !== "none") && s.visibility !== "visible" && !(parseFloat(s.opacity) > 0.5)) continue;
+    for (const parca of k.selectorText.split(",").filter((x) => x.includes(":hover"))) {
+      let hedefler = [];
+      try { hedefler = [...document.querySelectorAll(parca.replace(/:hover/g, ""))]; } catch { continue; }
+      for (const h of hedefler) if (!gorunur(h) && h.querySelectorAll("a[href], button").length >= 2) hoverMenu.add(h);
+    }
+  }
+  if (hoverMenu.size) ekle("S16", "bilgi", `Alt menü yalnız fareyle üzerine gelince açılıyor (${hoverMenu.size}): dokunmatikte ve klavyede açılmaz. Tıklayınca açılan buton kullan`, [...hoverMenu].map(tanim));
+
+  // ---------- S06 / S01: Krug'un "kolay meyveleri" [Krug-DMMT s.162] ----------
+  const altsiz = [...document.querySelectorAll("img:not([alt])")].filter((g) => {
+    const r = g.getBoundingClientRect();
+    return gorunur(g) && !g.closest("[aria-hidden=true]") && Math.min(r.width, r.height) >= 24;
+  });
+  if (altsiz.length) ekle("S06", "bilgi", `Alt metni olmayan görsel (${altsiz.length}): yüklenmezse ya da sesli okunursa ne olduğu bilinmez. Süs görseline alt="" yaz`,
+    altsiz.map((g) => `${tanim(g)} ${(g.currentSrc || g.src || "").split("/").pop().slice(0, 40)}`));
+  const ilkOdak = [...document.querySelectorAll("a[href], button, input:not([type=hidden]), select, textarea, [tabindex]:not([tabindex='-1'])")]
+    .find((e) => !e.disabled && getComputedStyle(e).display !== "none" && getComputedStyle(e).visibility !== "hidden");
+  const icerigeGec = ilkOdak?.matches("a[href^='#']") && /içeriğe|içerik|skip|main|atla|geç/i.test(`${ilkOdak.textContent} ${ilkOdak.getAttribute("aria-label") || ""}`);
+  if (!icerigeGec && navLinkleri.length >= 4)
+    ekle("S01", "bilgi", "Klavyede ilk sekme \"Ana içeriğe geç\" bağlantısı değil: klavye kullanan kişi her sayfada menünün tamamını yeniden geçmek zorunda");
+
+  // ---------- S10: Ziyaret edilen bağlantı ayrı görünsün [Krug-DMMT s.237] ----------
+  // Tarayıcının varsayılan mavisi (rgb(0, 0, 238)) ziyarette mora döner; yazar rengi verip :visited yazmazsa ayrım kaybolur.
+  if (metinLinkleri.length >= 3 && !okunamayanCss && linkRengi !== "rgb(0, 0, 238)" && !cssKurallari.some((k) => k.selectorText.includes(":visited")))
+    ekle("S10", "bilgi", "Ziyaret edilen bağlantı ziyaret edilmeyenden ayrılmıyor (stil sayfasında :visited yok): kullanıcı hangisini denediğini göremez");
+
+  // ---------- K03: Ana sayfa ne olduğunu söylüyor mu (slogan ya da tek cümlelik açıklama) [Krug-DMMT s.122-127] (YARI) ----------
+  if (location.pathname === "/" || location.pathname === anaYol) {
+    const aciklama = yaprakMetin.some((x) => x.el.getBoundingClientRect().top < vh * 0.6 && !x.el.closest("a, button, nav, label, footer, h1") &&
+      kelimeSay(x.t) >= 3 && kelimeSay(x.t) <= 25);
+    if (!aciklama) ekle("K03", "bilgi", "Ana sayfanın üst kısmında sitenin ne işe yaradığını söyleyen kısa cümle (slogan, 6-8 kelime) yok: ilk kez gelen 'bu ne?' diye sorar");
+  }
+
+  // ---------- K06: Arama kutusunda talimat [Krug-DMMT s.102-103] ----------
+  const aramaTalimat = aramaAlani.filter((g) => {
+    const p = kucuk(g.getAttribute("placeholder") || "");
+    return /yazın|yazınız|girin|giriniz|type|enter/.test(p) || p.split(" ").length > 4;
+  });
+  if (aramaTalimat.length) ekle("K06", "bilgi", "Arama kutusunda talimat var: kimse okumaz, 'Ara' ya da 'Burslarda ara' yeter", aramaTalimat.map((g) => `${tanim(g)} placeholder="${g.getAttribute("placeholder")}"`));
+
+  // ---------- S02: Bağlantı gezinir, buton iş yapar [COGA 4.2.2, 4.2.5] ----------
+  const eylemLink = [...document.querySelectorAll("a[href='#'], a[href^='javascript:' i]")].filter((a) => gorunur(a) && !a.getAttribute("role"));
+  if (eylemLink.length) ekle("S02", "bilgi", `Sayfa açmayan, iş yapan bağlantı (${eylemLink.length}, href="#" ya da javascript:): eylem için <button> kullan`, eylemLink.map(tanim));
+  const hrefsiz = [...document.querySelectorAll("a:not([href])")].filter((a) => gorunur(a) && !a.getAttribute("role") && getComputedStyle(a).cursor === "pointer");
+  if (hrefsiz.length) ekle("S02", "uyari", `Adresi olmayan tıklanabilir bağlantı (${hrefsiz.length}): klavyeyle ulaşılamaz, yeni sekmede açılamaz`, hrefsiz.map(tanim));
+  // Tıklanmayan şey kontrol gibi görünmez: dolu renkli ya da çerçeveli, köşesi yuvarlak, kısa yazılı kutu.
+  const sahteDugme = [...document.querySelectorAll("h1, h2, h3, h4, h5, h6, div, span, p, li")].filter((e) => {
+    if (!gorunur(e) || e.children.length > 1 || e.getAttribute("role") || e.closest(ETKILESIMLI + ", label, summary") || e.querySelector(ETKILESIMLI)) return false;
+    const n = kelimeSay(e.innerText || ""), r = e.getBoundingClientRect(), s = getComputedStyle(e);
+    if (n < 1 || n > 4 || r.height < 32 || r.height > 60 || r.width < 60 || r.width > 320 || s.cursor === "pointer") return false;
+    const z = rgb(s.backgroundColor);
+    const dolu = z && z.a >= 0.6 && doygunluk(z) > 0.3 && Math.abs(z.r - sayfaZemin.r) + Math.abs(z.g - sayfaZemin.g) + Math.abs(z.b - sayfaZemin.b) > 120;
+    const kutu = parseFloat(s.borderTopLeftRadius) >= 4 && ["Top", "Right", "Bottom", "Left"].every((y) => parseFloat(s[`border${y}Width`]) > 0 && s[`border${y}Style`] !== "none");
+    return dolu || kutu;
+  });
+  if (sahteDugme.length) ekle("S02", "bilgi", `Buton gibi görünen ama tıklanmayan kutu (${sahteDugme.length}): kullanıcı tıklar, bir şey olmaz. Düz yazı yap ya da gerçekten tıklanır kıl`, sahteDugme.map(tanim));
+
+  // ---------- S01: Gönder butonu formun altında [COGA 4.2.2] ----------
+  const ustteGonder = [...document.querySelectorAll("form")].filter(gorunur).map((f) => [formAlanlari(f), gonderDugmesi(f)])
+    .filter(([ag, d]) => ag.length >= 2 && d && d.getBoundingClientRect().bottom <= ag[0].getBoundingClientRect().top).map(([, d]) => tanim(d));
+  if (ustteGonder.length) ekle("S01", "bilgi", "Gönder butonu formun alanlarının üstünde: kullanıcı onu formun sonunda arar", ustteGonder);
+
+  // ---------- B10: Çok adımlı formda adım göstergesi [COGA 4.2.4] (YARI) ----------
+  const ileri = butonlar.find((b) => b.closest("form") && /^(ileri|sonraki|sonraki adım|devam|devam et|next|continue)$/.test(ad(b).replace(/[›»→>]+$/u, "").trim()));
+  if (ileri && !document.querySelector("progress, [role=progressbar], [aria-current=step]") && !/(\d+\s*\/\s*\d+|\d+\.\s*adım|adım\s*\d+|step\s*\d+|\d+ of \d+)/iu.test(tumMetin))
+    ekle("B10", "bilgi", "Çok adımlı form ama kaçıncı adımda olunduğu görünmüyor: tamamlanan, şimdiki ve kalan adımları göster (\"Adım 2 / 4\")", [tanim(ileri)]);
+
+  // ---------- B01 / S03: En önemli eylem kaydırmadan görünsün [COGA 4.3.1, 4.3.4] ----------
+  if (!dolgulu.length && document.scrollingElement.scrollHeight > vh * 1.2) {
+    const asagida = etkilesimli.filter((e) => !ilkEkranda(e) && birincilGibi(e) && !/daha fazla|devamını yükle|load more|başa dön|yukarı/.test(ad(e)));
+    if (asagida.length) ekle("B01", "bilgi", "Sayfanın birincil eylemi ilk ekranda değil: kaydırmadan görünmüyor, kullanıcı ne yapacağını aramak zorunda", [tanim(asagida[0])]);
+  }
+  if (mod === "mobil") {
+    const gizliGonder = [...document.querySelectorAll("form")].filter((f) => gorunur(f) && !f.closest("[role=search], search") && !f.querySelector("input[type=search]"))
+      .map((f) => [formAlanlari(f), gonderDugmesi(f)]).filter(([ag, d]) => {
+        if (!ag.length || ag.length > 3 || !d) return false;
+        const ilk = ag[0].getBoundingClientRect();
+        return ilk.top >= 0 && ilk.bottom <= vh && d.getBoundingClientRect().top >= vh;
+      }).map(([, d]) => tanim(d));
+    if (gizliGonder.length) ekle("S03", "uyari", "Mobilde kısa formun ilk alanı ekranda ama gönder butonu ekranın altında: klavye açılınca hiç görünmez, kullanıcı nasıl bitireceğini bilemez", gizliGonder);
+  }
+
+  // ---------- B10: Uzun medyayı bölümlere ayır [COGA 4.3.5], [Weinschenk-100 #44 s.119] ----------
+  const uzunVideo = [...document.querySelectorAll("video")].filter((v) => gorunur(v) && v.duration > 360 && v.duration !== Infinity && !v.querySelector("track[kind=chapters]"));
+  if (uzunVideo.length) ekle("B10", "bilgi", `${Math.round(uzunVideo[0].duration / 60)} dakikalık bölümsüz video: dikkat 7-10 dakikada düşer. 6 dakikadan kısa, adlı bölümlere ayır`, uzunVideo.map(tanim));
+
+  // ---------- B04: Çok virgüllü cümle [COGA 4.4.3] ve edilgen geniş zaman [COGA 4.4.2] ----------
+  // Ondalık virgül (1.250,50) sayılmaz.
+  const virgullu = cumleler.filter((c) => (c.match(/(?<!\d),|,(?!\d)/g) || []).length >= 3);
+  if (virgullu.length) ekle("B04", "bilgi", `${virgullu.length} cümlede 3 ya da daha çok virgül: sıralanan şeyleri madde imli listeye çevir`, virgullu.map((c) => c.slice(0, 120) + (c.length > 120 ? "…" : "")));
+  if (dil === "tr") {
+    // "-ebilir/-abilir" (olabilir, yapabilir) yeterlilik ekidir, edilgen değil: "b"den sonra gelen "-ilir" sayılmaz.
+    const genis = [...new Set(paragraf.flatMap((x) => x.t.match(/\p{L}{2,}(?<!b)(ıl|il|ul|ül|ın|in|un|ün)(ır|ir|ur|ür)(?!\p{L})/gu) || []))];
+    if (genis.length >= 3) ekle("B04", "bilgi", `Edilgen geniş zaman "-ılır" kalıbı (${genis.length}): kim yapacak belli değil. "Başvurular alınır" yerine "Başvurunu alırız" yaz`, genis);
+  }
+
+  // ---------- S08: Uzun içerik ara başlıkla taranır [COGA 4.4.8] ----------
+  const icerikKap = document.querySelector("main, [role=main]") || document.body;
+  const icerikKelime = paragraf.filter((x) => icerikKap.contains(x.el)).reduce((n, x) => n + kelimeSay(x.t), 0);
+  if (icerikKelime > 300 && ![...icerikKap.querySelectorAll("h2, h3, h4")].some(gorunur))
+    ekle("S08", "uyari", `${icerikKelime} kelimelik içerikte ara başlık yok: kullanıcı tarayarak aradığını bulamaz. Her birkaç paragrafa kısa bir başlık koy`);
+
+  // ---------- B06: Zorunlu alan işaretli [COGA 4.5.4] ----------
+  // Hepsi zorunluysa işaret gerekmez; karışıksa ya zorunlular (*) ya isteğe bağlılar işaretli olmalı. İşaret ::after ile de konabilir.
+  const etiketMetni = (g) => kucuk([...(g.labels || [])].map((l) => `${l.innerText} ${getComputedStyle(l, "::before").content} ${getComputedStyle(l, "::after").content}`).join(" ") +
+    ` ${g.getAttribute("aria-label") || ""} ${g.getAttribute("placeholder") || ""}`);
+  const isaretsizForm = [...document.querySelectorAll("form")].filter(gorunur).filter((f) => {
+    const ag = formAlanlari(f), zorunlu = ag.filter((g) => g.required || g.getAttribute("aria-required") === "true");
+    if (!zorunlu.length || zorunlu.length === ag.length) return false;
+    const zorunluIsaretli = zorunlu.every((g) => /\*|zorunlu|gerekli|required/.test(etiketMetni(g)));
+    const istegeIsaretli = ag.filter((g) => !zorunlu.includes(g)).every((g) => /isteğe bağlı|opsiyonel|seçmeli|optional/.test(etiketMetni(g)));
+    return !zorunluIsaretli && !istegeIsaretli;
+  });
+  if (isaretsizForm.length) ekle("B06", "uyari", "Formda hangi alanın zorunlu olduğu belli değil: zorunluları (*) ya da isteğe bağlıları \"(isteğe bağlı)\" diye işaretle", isaretsizForm.map(tanim));
+
+  // ---------- B07: Telefon ve kart alanında keyfi uzunluk sınırı [COGA 4.5.8] ----------
+  const darSinir = alanlar.filter((g) => {
+    if (!(g.maxLength > 0)) return false;
+    if (telBenzer(g)) return g.maxLength < 17;
+    return (/cc-number/.test(g.getAttribute("autocomplete") || "") || /card.?num|kart.?(no|num)|cc-?num/i.test(`${g.name} ${g.id}`)) && g.maxLength < 19;
+  });
+  if (darSinir.length) ekle("B07", "uyari", "Telefon/kart alanının uzunluk sınırı dar: \"+90 532 000 00 00\" (17) ya da boşluklu kart numarası (19) sığmıyor. Sınırı kaldır, boşluğu kendin temizle",
+    darSinir.map((g) => `${tanim(g)} maxlength=${g.maxLength}`));
+
+  // ---------- S01: Sağ tık menüsü serbest [COGA 4.9.2] ----------
+  let sagTikEngelli = false;
+  try {
+    const o = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
+    (document.querySelector("main, [role=main]") || document.body).dispatchEvent(o);
+    sagTikEngelli = o.defaultPrevented;
+  } catch { /* olay kurulamadı */ }
+  if (sagTikEngelli) ekle("S01", "uyari", "Sağ tık menüsü engellenmiş: kopyala, çevir, yazım denetimi gibi alışılmış araçlar çalışmıyor");
+
+  // ---------- B18: Titreşen renk çifti ve süslü yazı tipi [Weinschenk-100 #10 s.38, #15 s.54-56], [COGA 4.9.4] ----------
+  const titresen = [];
+  const kirmizi = (h) => h <= 15 || h >= 345, mavi = (h) => h >= 200 && h <= 260, yesil = (h) => h >= 90 && h <= 150;
+  const canli = (c) => c && doygunluk(c) >= 0.5 && Math.max(c.r, c.g, c.b) >= 120;
+  for (const el of metinOgeleri) {
+    const z = zeminBul(el), r = rgb(getComputedStyle(el).color);
+    if (!canli(z) || !canli(r) || r.a < 0.6) continue;
+    const t1 = ton(r), t2 = ton(z);
+    if (t1 != null && t2 != null && ((kirmizi(t1) && (mavi(t2) || yesil(t2))) || (kirmizi(t2) && (mavi(t1) || yesil(t1))))) titresen.push(tanim(el));
+  }
+  if (titresen.length) ekle("B18", "bilgi", `Kırmızı ile mavi ya da yeşil üst üste (${titresen.length}): renkler titreşir, göz yorulur. Yazıyı beyaz ya da siyah yap`, titresen);
+  const susluYazi = [...new Set(paragraf.map((x) => x.el))].filter((el) => {
+    const aile = kucuk(getComputedStyle(el).fontFamily.split(",")[0].replace(/["']/g, ""));
+    return /^(cursive|fantasy)$/.test(aile) || sozluk.suslu_yazi.some((k) => aile.includes(k));
+  });
+  if (susluYazi.length) ekle("B18", "bilgi", `Gövde metninde süslü ya da el yazısı yazı tipi (${susluYazi.length}): harfler zor tanınır, okur işi de zor sanır. Düz bir aile kullan`, susluYazi.map(tanim));
+
+  // ---------- S08: Neredeyse hizalı ama tam değil (dağınıklık) [Krug-DMMT s.62-63] (YARI) ----------
+  if (mod === "masaustu") {
+    const kenarlar = new Set();
+    for (const el of [...metinOgeleri, ...alanlar, ...butonlar]) {
+      if (!ilkEkranda(el) || el.closest("nav, header, footer")) continue;
+      const s = getComputedStyle(el), r = el.getBoundingClientRect();
+      if (s.display === "inline" || /center|right|end/.test(s.textAlign) || r.width < 40) continue;
+      const kutulu = cerceveli(el) || (rgb(s.backgroundColor)?.a ?? 0) > 0.05;
+      kenarlar.add(Math.round(kutulu ? r.left : r.left + parseFloat(s.paddingLeft) + parseFloat(s.borderLeftWidth)));
+    }
+    const xler = [...kenarlar].sort((a, b) => a - b), kayik = [];
+    for (let i = 1; i < xler.length; i++) if (xler[i] - xler[i - 1] >= 2 && xler[i] - xler[i - 1] <= 6) kayik.push(`${xler[i - 1]}px ↔ ${xler[i]}px`);
+    if (kayik.length >= 2) ekle("S08", "bilgi", `İlk ekranda neredeyse hizalı ama tam hizalı olmayan ${kayik.length} kenar çifti (2-6 px kayma): ızgara yok gibi görünür, göz dağınık tarar`, kayik);
+  }
+
+  // ---------- B09: Slayt adayları; dönüp dönmediğini denetle.mjs 6 sn bekleyip ölçer [COGA 4.6.1] ----------
+  const slaytlar = [...document.querySelectorAll("[aria-roledescription=carousel i], [class*=carousel i], [class*=swiper i], [class*=slick i], [class*=splide i], [class*=embla i], [class*=glide i], [class*=keen-slider i], [class*=slideshow i]")]
+    .filter((e) => gorunur(e) && e.getBoundingClientRect().width >= 200).filter((e, _, l) => !l.some((o) => o !== e && o.contains(e)));
+  slaytlar.forEach((e, i) => e.setAttribute("data-erisim-slayt", String(i)));
+
+  // ---------- Sayfalar arası kıyas için buton görünümü (S05) [COGA 4.2.3] ----------
+  const dugmeler = etkilesimli.filter((e) => e.matches("button, [role=button], input[type=submit], input[type=button]") && !e.closest("nav, header, [role=navigation]") &&
+    !e.matches(":disabled, [aria-disabled=true]")).map((b) => {
+    const s = getComputedStyle(b);
+    return { metin: ad(b), gorunum: [s.backgroundColor, s.color, s.borderTopLeftRadius, s.fontWeight, s.borderTopWidth, s.borderTopColor].join(" ") };
+  }).filter((d) => d.metin && d.metin.length <= 40);
+
   // ---------- Sayfalar arası kıyas için ham veri ----------
   const linkler = etkilesimli.filter((e) => e.matches("a[href]")).map((a) => ({
     href: a.href.split("#")[0], metin: ad(a) || erisimAdi(a), navda: !!a.closest("nav, header, [role=navigation]"),
   })).filter((l) => l.metin && l.href.startsWith(location.origin));
 
   return {
-    url: location.href, baslik, dil, h1: h1ler.map((h) => h.innerText.trim()), linkler, bulgular,
+    url: location.href, baslik, dil, h1: h1ler.map((h) => h.innerText.trim()), linkler, dugmeler, slaytAday: slaytlar.length, bulgular,
     metrik: { ilkEkranEtkilesim: ilkEtk.length, ilkEkranKelime: ilkKelime, okunabilirlik, cumle: cumleler.length, birincilButon: dolgulu.length,
       yardim: yardimVar, cls: perf ? Math.round(perf.cls * 1000) / 1000 : null, lcp: perf?.lcp ? Math.round(perf.lcp) : null, agirlikKB: Math.round(agirlik / 1024) },
   };

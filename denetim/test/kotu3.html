@@ -1,0 +1,38 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Burs başvurusu · Sınama Sitesi</title>
+<!-- Katalog v0.4 denetimleri: kaynak notlarındaki otomasyon sözlerinin her biri burada en az bir kez tetiklenir. -->
+<style>html{font-size:15px}body{font-family:sans-serif;margin:0;padding:16px}a{color:#1d4ed8}label{display:block}
+.menu .alt{display:none}.menu:hover .alt{display:block}</style></head><body>
+<header><a href="/giris">Giriş yap</a> <a href="/kayit">Kayıt ol</a> <a href="/yardim">Yardım</a> <a href="/iletisim">İletişim</a> <a href="/sepet">Sepetim</a> <a href="/hakkimizda">Hakkımızda</a> <a href="/site-haritasi">Site haritası</a></header>
+<nav><a href="/">Ana sayfa</a> <a href="/burslar">Burslar</a> <a href="/takvim">Takvim</a> <a href="/profil">Profil</a></nav>
+<h1>Burs başvurusu</h1>
+<p style="margin:4px 0 4px 3px">Kayma bir burada</p><p style="margin:4px 0 4px 40px">Kayma iki burada</p><p style="margin:4px 0 4px 44px">Kayma üç burada</p>
+<form id="yorum"><label for="y1">Yorumun</label><textarea id="y1"></textarea><div style="height:900px"></div><button>Yorumu gönder</button></form>
+<p><span title="Son başvuru tarihi 12 Mart">Erasmus+</span> programı için belgelerini hazırla.</p>
+<div class="menu"><button type="button">Burs türleri</button><div class="alt"><a href="/yl">Yüksek lisans</a> <a href="/dr">Doktora</a></div></div>
+<img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%23ccc'/%3E%3C/svg%3E" width="48" height="48">
+<ul><li><a href="/k1">Erasmus+ yüksek lisans bursu</a></li><li><a href="/k2">Fulbright doktora bursu</a></li><li><a href="/k3">DAAD araştırma bursu</a></li></ul>
+<form role="search"><label for="ara">Ara</label><input id="ara" type="search" placeholder="Aramak istediğiniz kelimeyi yazın"><button>Ara</button></form>
+<p><a href="#" onclick="return false">Listeyi yenile</a> ya da <a onclick="void 0" style="cursor:pointer">Filtreyi temizle</a></p>
+<div style="display:inline-block;border:1px solid #1d4ed8;border-radius:8px;padding:10px 16px">Başvurular</div>
+<form id="ustte"><button>Başvuruyu gönder</button><label for="u1">Adın</label><input id="u1"><label for="u2">Okulun</label><input id="u2"></form>
+<form id="adimli"><label for="i1">Bölümün</label><input id="i1"><button>İleri</button></form>
+<form id="zorunlu"><label for="z1">Ad</label><input id="z1" required><label for="z2">Soyad</label><input id="z2" required><label for="z3">Okul</label><input id="z3">
+<label for="t1">Telefon</label><input id="t1" type="tel" maxlength="11" autocomplete="tel"><button>Kaydet</button></form>
+<video id="v" width="320" height="180"></video>
+<p>Kimlik, diploma, transkript, dil belgesi ve niyet mektubunu tek klasörde topla.</p>
+<p>Başvurular sistem üzerinden alınır. Sonuçlar e-posta ile bildirilir. İtirazlar yazılı olarak yapılır ve süresi içinde kabul edilir. Yoğun günlerde yanıt gecikebilir, bu olabilir.</p>
+<p style="background:#1d4ed8;color:#ef4444;padding:8px">Kırmızı yazı mavi zeminde titreşir ve okuyanı yorar.</p>
+<p style="font-family:'Dancing Script', cursive">Bu paragraf süslü bir el yazısı yazı tipiyle yazılmış, okumak gereğinden zor.</p>
+<div class="carousel" style="width:300px;overflow:hidden"><div id="iz" style="display:flex;width:900px"><p style="width:300px;margin:0">Birinci duyuru</p><p style="width:300px;margin:0">İkinci duyuru</p><p style="width:300px;margin:0">Üçüncü duyuru</p></div></div>
+<main></main>
+<button style="background:#1d4ed8;color:#fff;border:0;padding:12px 24px">Başvuruyu tamamla</button>
+<script>
+// Video dosyası olmadan 10 dakikalık süre: yalnız sınama için.
+Object.defineProperty(document.getElementById("v"), "duration", { get: () => 600 });
+document.addEventListener("contextmenu", (e) => e.preventDefault());
+let k = 0;
+setInterval(() => { k = (k + 1) % 3; document.getElementById("iz").style.transform = `translateX(-${k * 300}px)`; }, 2500);
+// Ara başlıksız 300+ kelimelik içerik.
+document.querySelector("main").innerHTML = Array.from({ length: 30 }, () => "<p>Burs başvurusu için belgelerini hazırla ve son tarihten önce sisteme yükle.</p>").join("");
+</script>
+</body></html>

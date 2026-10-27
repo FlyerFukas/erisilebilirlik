@@ -95,12 +95,69 @@ async function sayfaOlc(tr, url, mod, klasor, sira, a) {
       sonuc.ekranGoruntusu = `${String(sira).padStart(2, "0")}-${mod}.png`;
       await p.screenshot({ path: join(klasor, sonuc.ekranGoruntusu) });
     }
+    // Ekran görüntüsünden sonra: ikisi de sayfayı değiştirir (bekleme, yazı boyutu).
+    if (mod === "masaustu") {
+      if (sonuc.slaytAday) sonuc.bulgular.push(...await slaytSina(p));
+      sonuc.bulgular.push(...await yaziBoyutuSina(ctx, p));
+    }
     return sonuc;
   } catch (h) {
     return { url, mod, hata: String(h.message || h).split("\n")[0], bulgular: [], linkler: [] };
   } finally {
     await ctx.close();
   }
+}
+
+// Kendiliğinden dönen slayt (B09) [COGA 4.6.1], [Krug-DMMT s.62-63]: 6 sn hiç dokunmadan bekle, slaytın içi yer değiştirdi mi?
+// Adayları olcumler.js data-erisim-slayt ile işaretler; slayt yoksa beklenmez. Saniyede bir örnek alınır: tek karşılaştırma
+// döngüsü 6 sn'ye denk gelen slaytı (2 slayt × 3 sn) kaçırır.
+async function slaytSina(p) {
+  const imza = () => p.evaluate(() => [...document.querySelectorAll("[data-erisim-slayt]")].map((e) => ({
+    imza: [e.scrollLeft, ...[...e.querySelectorAll("*")].slice(0, 40).map((c) =>
+      `${Math.round(c.getBoundingClientRect().left)}:${c.getAttribute("class") || ""}:${c.getAttribute("aria-hidden") || ""}`)].join("|"),
+    durdur: [...e.querySelectorAll("button, [role=button]")].some((b) => /durdur|duraklat|pause|stop/i.test(`${b.innerText} ${b.getAttribute("aria-label") || ""}`)),
+    ad: `${e.tagName.toLowerCase()}${typeof e.className === "string" && e.className ? "." + e.className.trim().split(/\s+/)[0] : ""}`,
+  })));
+  try {
+    const once = await imza(), degisen = new Set();
+    for (let t = 0; t < 6; t++) {
+      await p.waitForTimeout(1000);
+      (await imza()).forEach((s, i) => { if (once[i] && s.imza !== once[i].imza) degisen.add(i); });
+    }
+    const donen = once.filter((_, i) => degisen.has(i));
+    if (!donen.length) return [];
+    const durdursuz = donen.some((d) => !d.durdur);
+    return [{ kural: "B09", seviye: durdursuz ? "uyari" : "bilgi", ornekler: donen.map((d) => d.ad),
+      mesaj: durdursuz ? "Kendiliğinden dönen slayt var ve durdurma düğmesi yok: okumaya başlayan kişinin önünden içerik kayıp gidiyor"
+        : "Kendiliğinden dönen slayt var: durdurma düğmesi görünür, ama en iyisi slaytı kullanıcı ilerletsin" }];
+  } catch { return []; }
+}
+
+// Krug'un yazı boyutu sınaması [Krug-DMMT s.212-213], [COGA 4.9.4]: tarayıcının yazı boyutu ayarını (yakınlaştırma değil)
+// 16'dan 32'ye çıkar. px ile sabitlenmiş metin bu ayara uymaz; büyük yazıya ihtiyacı olan kişi okuyamaz.
+async function yaziBoyutuSina(ctx, p) {
+  const olc = (isaretle) => p.evaluate((isaretle) => {
+    if (isaretle) [...document.querySelectorAll("p, li, td, dd, label, blockquote")]
+      .filter((e) => (e.innerText || "").trim().split(/\s+/).length >= 3 && e.getBoundingClientRect().height > 1).slice(0, 40)
+      .forEach((e, i) => e.setAttribute("data-erisim-yazi", String(i)));
+    return { boyut: [...document.querySelectorAll("[data-erisim-yazi]")].map((e) => parseFloat(getComputedStyle(e).fontSize)),
+      tasma: document.scrollingElement.scrollWidth - innerWidth };
+  }, isaretle);
+  try {
+    const once = await olc(true);
+    if (!once.boyut.length) return [];
+    const cdp = await ctx.newCDPSession(p);
+    await cdp.send("Page.setFontSizes", { fontSizes: { standard: 32, fixed: 26 } });
+    await p.waitForTimeout(400);
+    const sonra = await olc(false);
+    const sabit = once.boyut.filter((b, i) => !(sonra.boyut[i] >= b * 1.5)).length, oran = sabit / once.boyut.length;
+    const bulgular = [];
+    if (oran > 0.2) bulgular.push({ kural: "S12", seviye: oran > 0.5 ? "uyari" : "bilgi", ornekler: [],
+      mesaj: `Tarayıcının yazı boyutu ayarı iki katına çıkınca ${sabit}/${once.boyut.length} metin aynı boyutta kaldı: yazı px ile sabitlenmiş, büyük yazıya ihtiyacı olan kişi okuyamaz. font-size için rem kullan` });
+    if (sonra.tasma > 4 && once.tasma <= 4) bulgular.push({ kural: "S12", seviye: "bilgi", ornekler: [],
+      mesaj: `Yazı büyütülünce sayfa ${sonra.tasma}px yana taşıyor: sabit genişlikli kutular büyüyen metni sığdırmıyor` });
+    return bulgular;
+  } catch { return []; }
 }
 
 // Sayfalar arası kurallar: tutarlılık (S05), koku sürekliliği (K04), aynı başlık (K03).
@@ -117,6 +174,18 @@ function sayfalarArasi(sonuclar, anaYol = "/") {
   const tutarsiz = [...hrefMetin].filter(([, m]) => m.size > 1);
   if (tutarsiz.length) bulgular.push({ kural: "S05", seviye: "uyari", url: "(site geneli)",
     mesaj: "Aynı sayfaya giden menü öğesi farklı adlarla anılıyor", ornekler: tutarsiz.slice(0, 5).map(([h, m]) => `${new URL(h).pathname}: ${[...m].map((x) => `"${x}"`).join(" / ")}`) });
+
+  // Aynı işi yapan buton her sayfada aynı görünür [COGA 4.2.3].
+  const dugmeGorunum = new Map();
+  for (const s of masa) for (const d of s.dugmeler || []) {
+    if (!dugmeGorunum.has(d.metin)) dugmeGorunum.set(d.metin, new Map());
+    const g = dugmeGorunum.get(d.metin);
+    g.set(d.gorunum, new Set([...(g.get(d.gorunum) || []), new URL(s.url).pathname]));
+  }
+  const farkliDugme = [...dugmeGorunum].filter(([, g]) => g.size > 1 && new Set([...g.values()].flatMap((y) => [...y])).size > 1);
+  if (farkliDugme.length) bulgular.push({ kural: "S05", seviye: "uyari", url: "(site geneli)",
+    mesaj: "Aynı adlı buton sayfadan sayfaya farklı görünüyor: kullanıcı aynı işi yaptığını anlamakta duraksar",
+    ornekler: farkliDugme.slice(0, 5).map(([m, g]) => `"${m}": ${g.size} görünüm (${[...g.values()].map((y) => [...y].join(" ")).join(" / ")})`) });
 
   const basliklar = new Map();
   for (const s of masa) basliklar.set(s.baslik, [...(basliklar.get(s.baslik) || []), new URL(s.url).pathname]);
