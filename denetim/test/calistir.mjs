@@ -55,10 +55,35 @@ for (const [kural, parca] of [["B04", "Türkçe karakteri bozulmuş"], ["B04", "
 }
 
 const kotu2 = await denetle("kotu2.html");
-for (const [kural, parca] of [["B13", "dili belirtilmemiş"], ["S08", "belirgin büyük"], ["S10", "zayıf"], ["S10", "breadcrumb"], ["K10", "zorunlu alan"], ["S17", "anlamıyla çelişiyor"]]) {
+for (const [kural, parca] of [["B13", "dili belirtilmemiş"], ["S08", "belirgin büyük"], ["S10", "zayıf"], ["S10", "breadcrumb"], ["K10", "zorunlu alan"], ["S17", "anlamıyla çelişiyor"], ["K07", "yalnız \"Veri yok\""], ["K07", "ilk adımı göstermiyor"], ["K07", "boş tablo"]]) {
   dogrula(mesajVar(kotu2, kural, parca), `kotu2.html → ${kural} "${parca}"`);
 }
 dogrula(!mesajVar(kotu2, "K10", "hiçbirinde yardım"), "kotu2.html → e-posta bağlantısı yardım sayılıyor (K10 site geneli yok)");
+// Etkileşim senaryosu (--etkilesim): yazma istekleri kesilir, form gerçekten gönderilir.
+const formKotu = await denetle("form-kotu.html", ["--etkilesim"]);
+for (const [kural, parca] of [["B08", "hiçbir hata mesajı görünmedi"], ["B08", "girilen veri silindi"], ["B08", "doğrulama balonu"], ["S04", "1 sn içinde"]]) {
+  dogrula(mesajVar(formKotu, kural, parca), `form-kotu.html (etkileşim) → ${kural} "${parca}"`);
+}
+const formIyi = await denetle("form-iyi.html", ["--etkilesim"]);
+const formIyiSorun = formIyi.bulgular.filter((b) => b.sayfalar.some((y) => y.includes("etkileşim")));
+dogrula(formIyiSorun.length === 0, `form-iyi.html (etkileşim) bulgu vermiyor${formIyiSorun.length ? ": " + formIyiSorun.map((b) => b.kural + " " + b.mesaj).join(" | ") : ""}`);
+
+// Statik tarama: kaynak koddaki kalıplar (giriş arkası ekranlar da kapsanır).
+async function statik(klasor) {
+  const json = join(mkdtempSync(join(tmpdir(), "erisim-statik-")), "s.json");
+  let kod = 0;
+  try { await promisify(execFile)("node", [join(BURASI, "../statik.mjs"), join(BURASI, "statik", klasor), "--json", json]); } catch (h) { kod = h.code; }
+  return { kod, bulgular: JSON.parse(readFileSync(json, "utf8")) };
+}
+const sKotu = await statik("kotu");
+const sKural = new Set(sKotu.bulgular.map((b) => `${b.kural}:${b.seviye}`));
+for (const beklenen of ["K01:kritik", "K01:uyari", "B11:kritik", "B13:uyari", "B05:uyari", "B09:uyari", "B12:uyari", "B12:bilgi", "S06:uyari"]) {
+  dogrula(sKural.has(beklenen), `statik/kotu → ${beklenen}`);
+}
+dogrula(sKotu.kod === 1, "statik/kotu kritik bulguda çıkış kodu 1");
+const sIyi = await statik("iyi");
+dogrula(sIyi.kod === 0 && sIyi.bulgular.length === 0, `statik/iyi bulgu vermiyor${sIyi.bulgular.length ? ": " + sIyi.bulgular.map((b) => b.kural + " " + b.ornek).join(" | ") : ""}`);
+
 const iyi = await denetle("iyi.html");
 const iyiKritik = iyi.bulgular.filter((b) => b.seviye !== "bilgi");
 dogrula(iyiKritik.length === 0, `iyi.html kritik ve uyarı vermiyor${iyiKritik.length ? ": " + iyiKritik.map((b) => b.kural + " " + b.mesaj).join(" | ") : ""}`);

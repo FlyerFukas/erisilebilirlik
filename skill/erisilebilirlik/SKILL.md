@@ -73,6 +73,8 @@ node C:/Users/furka/Music/Erisilebilirlik/denetim/denetle.mjs http://localhost:3
 ```
 
 - Masaüstü (1366 px) ve mobil (390 px) açar, 4 bağlantı daha gezer, `erisim-rapor/rapor.md` + ekran görüntüsü yazar. Düzen kayması (CLS), yüklenme (LCP), sayfa ağırlığı da ölçülür.
+- **Form ya da gönderim değiştiyse `--etkilesim` ekle:** form gerçekten gönderilir (yazma istekleri ağda kesilir, canlı sitede bile kayıt oluşmaz); boş gönderimde hata çıkıyor mu, alanın yanında mı, ağ hatasında veri korunuyor mu, 1 sn içinde tepki var mı (B08, S04).
+- **Kod taraması:** `npm run erisim:statik` (ya da `node C:/Users/furka/Music/Erisilebilirlik/denetim/statik.mjs <proje>`): sunucu ve giriş gerekmeden kaynak kodda belirsiz etiket, önceden işaretli izin, dilsiz tarih biçimi, yapıştırma engeli, adsız ikon buton, ham hata mesajı. Giriş arkası ekranları da kapsar.
 - **Kritik bulgu varsa çıkış kodu 1**: iş bitmemiştir, düzelt ve yeniden çalıştır.
 - Uyarıları tek tek değerlendir: düzelt ya da neden bilinçli olduğunu bir satırla yaz.
 - Furkan'a **kanıt** olarak üç boyutun puanını, kritik/uyarı sayısını ve rapor yolunu göster. `erisim/taban.json` varsa tabana göre değişimi de göster. "Sade oldu" deme; raporu göster.

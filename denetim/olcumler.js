@@ -589,6 +589,21 @@ export function olc({ mod, sozluk, esik, anaYol = "/" }) {
     if (sonLink && !sonLink.getAttribute("aria-current")) ekle("S10", "bilgi", "İçerik yolunun (breadcrumb) son öğesi bağlantı: bulunulan sayfa düz ve kalın metin olmalı", [tanim(sonLink)]);
   }
 
+  // ---------- K07: Boş durum yol gösteriyor mu ----------
+  // Giriş arkasındaki asıl boş durumlar için yeni hesapla --oturum gerekir; bu, görünen her sayfada çalışır.
+  const ciplakBos = yaprakMetin.filter((x) => /^(veri yok|kayıt yok|kayıt bulunamadı|sonuç yok|sonuç bulunamadı|bulunamadı|liste boş|boş|içerik yok|no data|no results( found)?|nothing (here|found)|empty|no items)[.!]?$/iu.test(x.t));
+  if (ciplakBos.length) ekle("K07", "uyari", `Boş durum yalnız "${ciplakBos[0].t}" diyor: ne olduğunu ve ilk adımı söylemiyor`, ciplakBos.map((x) => tanim(x.el)));
+  const adimsiz = yaprakMetin.filter((x) => {
+    if (!/(^|\s)henüz\s|no .{1,30} yet|nothing yet/iu.test(x.t) || kelimeSay(x.t) > 25 || x.el.closest("a, button")) return false;
+    let kap = x.el;
+    for (let i = 0; i < 3 && kap.parentElement && kap.parentElement.getBoundingClientRect().height < 400; i++) kap = kap.parentElement;
+    return ![...kap.querySelectorAll("a[href], button, [role=button]")].some(gorunur);
+  });
+  if (adimsiz.length) ekle("K07", "bilgi", `Boş durum ilk adımı göstermiyor (${adimsiz.length}): yanına tek bir "İlk ... ekle" butonu koy`, adimsiz.map((x) => `${tanim(x.el)}`));
+  const bosTablo = [...document.querySelectorAll("table")].filter((t) => gorunur(t) && t.querySelector("th") &&
+    ![...t.querySelectorAll("tbody tr, tr")].some((tr) => tr.querySelector("td")));
+  if (bosTablo.length) ekle("K07", "uyari", `Yalnız başlıkları olan boş tablo (${bosTablo.length}): tablo yerine ne olduğunu ve ilk adımı söyleyen boş durum göster`, bosTablo.map(tanim));
+
   // ---------- S13: Acil çıkış ----------
   const kapatmaDeseni = /(^|\s)(kapat|close|vazgeç|iptal|cancel|tamam|ok|anladım|hayır|reddet|kabul|dismiss|got it|geri)(\s|$)|^[×✕✖x]$/u;
   const diyaloglar = [...document.querySelectorAll("dialog[open], [role=dialog], [role=alertdialog], [aria-modal=true]")]

@@ -19,7 +19,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const DENETIM_DOSYALARI = ["denetle.mjs", "olcumler.js", "kurallar.mjs", "sozluk.json"];
+const DENETIM_DOSYALARI = ["denetle.mjs", "olcumler.js", "etkilesim.mjs", "statik.mjs", "kurallar.mjs", "sozluk.json"];
 const PLAYWRIGHT = "1.64.1";
 
 const arg = process.argv.slice(2);
@@ -91,6 +91,7 @@ if (existsSync(pj)) {
   const istenen = {
     "erisim:kur": "npm install --prefix erisim/denetim --no-audit --no-fund",
     erisim: "node erisim/denetim/denetle.mjs",
+    "erisim:statik": "node erisim/denetim/statik.mjs .",
   };
   if (Object.entries(istenen).some(([k, v]) => p.scripts[k] !== v)) {
     Object.assign(p.scripts, istenen);
@@ -114,14 +115,19 @@ const bolum = `${BASLIK}
 Erişilebilirlik burada bilişsel yük, sezgisel etkileşim ve bilgi kokusu demek: kullanıcı ürünü kılavuzsuz, destek aramadan, yorulmadan anlasın (WCAG değil).
 
 - Kullanıcıya görünen her iş (sayfa, form, menü, metin, hata, boş durum) öncesinde \`erisilebilirlik\` skill'ini çağır; ürün niyeti \`erisim/niyet.md\`, terimler \`erisim/terimler.json\`.
-- İş bitince denetim: \`npm run erisim -- <adres> --tara 4\` (ilk kez: \`npm run erisim:kur\`). Kritik bulgu varsa iş bitmemiştir. Puanı ve rapor yolunu kanıt olarak göster.
+- İş bitince denetim: \`npm run erisim -- <adres> --tara 4\` (ilk kez: \`npm run erisim:kur\`). Form ya da gönderim değiştiyse \`--etkilesim\` ekle: form gerçekten gönderilir, yazma istekleri ağda kesilir (kayıt oluşmaz). Kritik bulgu varsa iş bitmemiştir. Puanı ve rapor yolunu kanıt olarak göster.
+- Kod taraması (giriş arkası ekranlar dahil, sunucu gerekmez): \`npm run erisim:statik\`.
 - Giriş arkasındaki ekranlar: \`npx --prefix erisim/denetim playwright-core codegen --channel msedge --save-storage=erisim/oturum.json <adres>\` ile giriş yap, sonra \`--oturum erisim/oturum.json\`. Oturum dosyası commit'lenmez.
 - Taban çizgisi: ilk denetimde \`--taban-yaz\`; sonraki raporlar tabana göre değişimi gösterir.
 - Denetim kopyasını elle düzenleme; güncellemek için Erisilebilirlik deposunda \`node araclar/projeye_kur.mjs <bu proje>\`.
 `;
 const cmMevcut = existsSync(cm) ? readFileSync(cm, "utf8") : "";
 if (!cmMevcut.includes(BASLIK)) yaz(cm, `${cmMevcut}${cmMevcut ? (cmMevcut.endsWith("\n") ? "\n" : "\n\n") : ""}${bolum}`, "erişilebilirlik bölümü");
-else yapilan.push("dokunma   CLAUDE.md  (bölüm var)");
+else {
+  // Bölüm kite aittir: başlığından sonraki "## " başlığına kadar yenilenir, dosyanın geri kalanına dokunulmaz.
+  const bas = cmMevcut.indexOf(BASLIK), son = cmMevcut.indexOf("\n## ", bas + BASLIK.length);
+  yaz(cm, cmMevcut.slice(0, bas) + bolum + (son === -1 ? "" : cmMevcut.slice(son)), "erişilebilirlik bölümü yenilendi");
+}
 
 // 6 · İsteğe bağlı CI: Vercel'in GitHub'a bildirdiği her başarılı önizleme dağıtımında denetim
 if (ci) yaz(join(kok, ".github", "workflows", "erisim.yml"), `# Erişilebilirlik denetimi: Vercel önizlemesi hazır olunca çalışır, kritik bulguda kırmızı.

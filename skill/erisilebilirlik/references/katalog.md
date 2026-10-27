@@ -90,7 +90,7 @@ Aynı kural, aynı düzey ve aynı mesaj kalıbı birden çok sayfada çıkarsa 
 ### B08 · Hata mesajı çözüm söyler
 **İlke:** Hata mesajı **ne yapıldığını, sorunun ne olduğunu, nasıl düzeleceğini** sade dilde, etken çatıyla, gerekirse örnekle, hatalı alanın **hemen yanında** ve suçlamadan söyler. Girilen veri silinmez. Mesaj sorunun **doğru düzeyini** söyler.
 **Neden:** Beş öğe: ne yaptın, sorun ne, nasıl düzeltilir, sade dil ve etken çatı, örnek [Weinschenk-100 #85 s.205]. Sorun anında görüş daralır, kullanıcı ekranın diğer bölgelerine bakmayı bırakır; mesaj uzaktaysa görülmez [Weinschenk-100 #6 s.29-30]; sayfa yenilenip tek şey değişince fark edilmez [Weinschenk-100 #8 s.35-36]. Stres altında tünel eylemi: işe yaramayan aynı şey tekrar tekrar denenir [Weinschenk-100 #86 s.206-209]. Kullanıcı hatayı en alt düzeyden (şifreyi tekrar yazmak) düzeltmeye başlar; asıl sorun üst düzeydeyse (yanlış hesap) mesaj bunu söylemeli [Norman-DOET s.127-128]. Kaba, anlaşılmaz, kod numaralı mesaj "işleri yanlış yapmanın yolu"dur [Norman-DOET s.195]; birkaç başarısızlık "bu bana göre değil" öğrenilmiş çaresizliğine döner [Norman-DOET s.58-59]. [Nielsen-10 #9], [COGA 4.5.5, 4.5.7, 4.5.10].
-**Denetim:** YARI. Hata kutusunda "Hata!", "Bir hata oluştu", "Geçersiz" gibi genel mesaj uyarı; hata metninde kod ("Error 401", "#402", "E1023") uyarı. İçerik doğruluğunu insan okur.
+**Denetim:** YARI. Hata kutusunda "Hata!", "Bir hata oluştu", "Geçersiz" gibi genel mesaj uyarı; hata metninde kod ("Error 401", "#402", "E1023") uyarı. `--etkilesim` ile form gerçekten gönderilir (yazma istekleri ağda kesilir): zorunlu alanları boş gönderimde hiç mesaj yoksa uyarı, yalnız tarayıcı balonu varsa bilgi, mesaj alanın yanında değilse bilgi, ağ hatası taklidinde girilen veri silinirse uyarı. İçerik doğruluğunu insan okur.
 **Yap:** "Bu e-posta ile kayıt var. Giriş yapmak ister misin?" "Ödeme tarihi fatura tarihinden önce. Ödeme tarihini 15 Mart'tan sonra seç." **Yapma:** "Hata oluştu.", "#402: Faturanın ödenmesi için ödeme tarihinin oluşturma tarihinden sonra olması gereklidir."
 
 ### B09 · Kesinti ve dikkat dağıtıcı yok
@@ -174,7 +174,7 @@ Aynı kural, aynı düzey ve aynı mesaj kalıbı birden çok sayfada çıkarsa 
 ### S04 · Her eyleme anında ve doğru geri bildirim
 **İlke:** Her tıklama görünür tepki alır: ~100 ms içinde görsel değişim, 400 ms üstünde yükleniyor, 10 sn üstünde ilerleme ve iptal. Başarı da söylenir ("Kaydedildi"). Gösterge isteği değil gerçekleşen sonucu yansıtır. Boş, yükleniyor ve hata durumları birbirinden ayırt edilir.
 **Neden:** Geri bildirimsiz kullanıcı komutu tekrarlar, işlem iki kez yapılır [Norman-DOET s.8]; görünür sonucu olmayan eylem etkisiz sanılır [Norman-DOET s.27]; kendi sesini duymadan konuşmak gibidir [Norman-DOET s.43]. Three Mile Island'daki ışık vanayı değil vanaya giden sinyali gösteriyordu [Norman-DOET s.59-60]. Kaset olup olmadığı görünmeyen video oynatıcı: değerlendirme uçurumu [Norman-DOET s.67-68]. Sessiz havalandırmada ışık yanıltıcıydı, gürültü hoş karşılanırdı [Norman-DOET s.120]. Geri bildirim övgü değil bilgidir ("Harikasın!" değil "3 belgeden 2'si yüklendi") [Weinschenk-100 #38 s.107-108]. 400 ms Doherty eşiği [LawsOfUX: Google]. [Nielsen-10 #1], [COGA 4.5.10]. Algılanan süre nesnel süreden farklıdır [Trukenbrod-2020].
-**Denetim:** ELLE (etkileşim senaryosuyla yarı otomatik plan).
+**Denetim:** YARI. `--etkilesim` ile form gönderilince 1 sn içinde ekranda hiçbir değişiklik yoksa uyarı (tarayıcı doğrulama balonu tepki sayılır). Diğer kontroller ve uzun işlerde ilerleme ELLE.
 **Yap:** "Gönderildi" yalnız sunucu onayından sonra; iyimser güncelleme başarısız olursa açıkça geri alınır ve söylenir.
 
 ### S05 · Tutarlılık
@@ -298,7 +298,7 @@ Aynı kural, aynı düzey ve aynı mesaj kalıbı birden çok sayfada çıkarsa 
 ### K07 · Boş durum yol gösterir
 **İlke:** Boş liste, boş panel, sonuçsuz arama, 404 ne olduğunu ve ilk adımı söyler: "Henüz burs eklemedin. İlk bursu ekle." Mümkünse dolu bir örnek gösterir.
 **Neden:** "Boş ekranın zorbalığı": tanımadığın insanlarla dolu partide ev sahibinin "kendi evin gibi" deyip kaybolması [Norman-DOET s.194]. İnsanlar en iyi örnekle öğrenir [Weinschenk-100 #34 s.99-100]. 404 ve hata sayfaları ilişki kurma fırsatıdır [LawsOfUX: zirve-son]. [COGA 4.6.4].
-**Denetim:** ELLE. Yeni hesapla her ana ekranı aç.
+**Denetim:** OTOMATİK (kısmen). Görünen boş durum yalnız "Veri yok", "Sonuç bulunamadı" gibi çıplak bir ifadeyse uyarı; "Henüz ..." mesajının yanında ilk adım bağlantısı ya da butonu yoksa bilgi; yalnız başlıkları olan boş tablo uyarı. Giriş arkasındaki boş durumlar: yeni hesapla `--oturum` ya da ELLE.
 
 ### K08 · Her tık düşünmesiz
 **İlke:** Tık sayısı değil kararsızlık azaltılır. Her adımda doğru seçenek tartışmasız; zor seçim ikiye bölünür, ilki düşünmesiz yapılır.
@@ -373,5 +373,6 @@ Kullanıcı bunları hiç sormamalı [Krug-DMMT s.36]: **Neredeyim? Nereden baş
 
 ## Değişiklik günlüğü
 
+- **v0.3 (2026-10-27):** B08 ve S04 etkileşim senaryosuyla (`--etkilesim`) yarı otomatik, K07 kısmen otomatik oldu.
 - **v0.2 (2026-10-18):** 16 kaynağın tamamı notlandı (`kaynakca/notlar/`). Beş temel ilke, önem modeli ve düzeltme kuralı eklendi. B02'nin dayanağı Miller'dan COGA 4.6.3 ve Cowan/Weinschenk'e taşındı (≤ 5, ideali 3-4). Yeni kurallar: B15 hızlandırıcı, B16 bilgiyi devral, B17 iyi niyet, B18 okunur yazı, S13 acil çıkış, S14 bekleme, S15 başarılıyı koru, S16 seyrek kullanım, S17 renk anlamı, S18 kararlı yerleşim, S19 veritabanı aynası değil, S20 otomasyon geçersiz kılınabilir, K10 bağlamsal yardım, Ö08 sezgisel ilk kullanım. B11'e güvenli varsayılan, B14'e yıkıcı eylem ayrımı, S10'a kip eklendi. v0.1'deki yanlış Weinschenk ve Norman sayfa atıfları düzeltildi. Ö05'e öz bildirim uyarısı. 40'tan fazla yeni otomatik denetim.
 - **v0.1 (2026-10-18):** ilk sürüm, 36 kural + Ö01-Ö07.

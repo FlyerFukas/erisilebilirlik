@@ -1,0 +1,24 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Başvuru · Form sınaması</title>
+<style>body{font-family:sans-serif;padding:16px}label{display:block;margin-top:8px}input,button{min-height:44px}.hata{color:#b91c1c}</style></head><body>
+<header><a href="/">Form sınaması</a></header><h1>Başvuru</h1>
+<form id="iyi" novalidate><h2>Başvuru formu</h2>
+<label for="a1">Adın</label><input id="a1" required autocomplete="name" aria-describedby="a1h"><p id="a1h" class="hata"></p>
+<label for="a2">E-posta</label><input id="a2" type="email" required autocomplete="email" aria-describedby="a2h"><p id="a2h" class="hata"></p>
+<button id="g">Başvuruyu gönder</button><p id="durum" role="status"></p></form>
+<footer><a href="/yardim">Yardım ve iletişim</a></footer>
+<script>
+const f = document.getElementById("iyi"), g = document.getElementById("g"), durum = document.getElementById("durum");
+f.addEventListener("submit", async (e) => {
+  e.preventDefault(); let tamam = true;
+  for (const [id, mesaj] of [["a1", "Adını yaz. Başvurunda bu ad görünecek."], ["a2", "E-posta adresini yaz, ör. ornek@posta.com."]]) {
+    const alan = document.getElementById(id), bos = !alan.value.trim();
+    alan.setAttribute("aria-invalid", bos ? "true" : "false"); document.getElementById(id + "h").textContent = bos ? mesaj : "";
+    if (bos) tamam = false;
+  }
+  if (!tamam) return;
+  g.disabled = true; g.textContent = "Gönderiliyor…";
+  try { await fetch("/kaydet", { method: "POST", body: new FormData(f) }); durum.textContent = "Başvurun alındı."; }
+  catch { durum.textContent = "Bağlantı koptu. Yazdıkların duruyor, tekrar gönderebilirsin."; }
+  g.disabled = false; g.textContent = "Başvuruyu gönder";
+});
+</script></body></html>

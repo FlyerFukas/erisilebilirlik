@@ -1,0 +1,15 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Başvuru · Form sınaması</title>
+<style>body{font-family:sans-serif;padding:16px}label{display:block;margin-top:8px}input,button{min-height:44px}</style></head><body>
+<header><a href="/">Form sınaması</a></header><h1>Başvuru</h1>
+<form id="sessiz" novalidate><h2>Sessiz form</h2><label for="a1">Adın</label><input id="a1" required><button>Başvuruyu gönder</button></form>
+<form id="silen" novalidate><h2>Silen form</h2><label for="b1">Adın</label><input id="b1"><label for="b2">E-posta</label><input id="b2" type="email"><button>Mesajı gönder</button></form>
+<form id="balon"><h2>Balon form</h2><label for="c1">Telefon</label><input id="c1" type="tel" required><button>Kaydet ve devam et</button></form>
+<script>
+document.getElementById("sessiz").addEventListener("submit", (e) => e.preventDefault());
+document.getElementById("silen").addEventListener("submit", async (e) => {
+  e.preventDefault(); const f = e.target;
+  try { await fetch("/kaydet", { method: "POST", body: new FormData(f) }); } catch {}
+  f.reset();
+});
+document.getElementById("balon").addEventListener("submit", (e) => e.preventDefault());
+</script></body></html>

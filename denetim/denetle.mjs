@@ -9,6 +9,8 @@
 //                --oturum F  Playwright storageState dosyası: giriş yapılmış sayfaları denetler
 //                            (oluşturma: npx playwright-core codegen --channel msedge --save-storage=oturum.json <adres>)
 //                --terimler F  projenin terim sözlüğü (varsayılan ./erisim/terimler.json varsa o)
+//                --etkilesim   formları gerçekten gönderip hata mesajını, veri korumasını, tepki süresini ölç
+//                              (yazma istekleri ağda kesilir: canlı sitede kayıt oluşmaz; bkz. etkilesim.mjs)
 //                --taban-yaz   bu denetimin puanını ./erisim/taban.json'a taban çizgisi olarak yaz;
 //                              dosya varsa her raporda tabana göre değişim gösterilir
 // Çıkış kodu: kritik bulgu varsa 1 (CI'da derlemeyi durdurur), yoksa 0.
@@ -17,6 +19,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { olc } from "./olcumler.js";
+import { etkilesimOlc } from "./etkilesim.mjs";
 import { KURALLAR, ESIK } from "./kurallar.mjs";
 
 const KOK = dirname(fileURLToPath(import.meta.url));
@@ -31,6 +34,7 @@ function argumanlar(argv) {
     else if (argv[i] === "--oturum") a.oturum = resolve(argv[++i]);
     else if (argv[i] === "--terimler") a.terimler = resolve(argv[++i]);
     else if (argv[i] === "--taban-yaz") a.tabanYaz = true;
+    else if (argv[i] === "--etkilesim") a.etkilesim = true;
     else a.adresler.push(argv[i]);
   }
   if (!a.adresler.length) {
@@ -163,7 +167,7 @@ function raporYaz(a, sonuclar, genel, klasor) {
   const masaustu = new Set(sonuclar.filter((s) => s.mod === "masaustu").flatMap((s) => s.bulgular.map((b) => anahtar(s, b))));
   const tum = [...sonuclar.flatMap((s) => s.bulgular
     .filter((b) => s.mod === "masaustu" || !masaustu.has(anahtar(s, b)))
-    .map((b) => ({ ...b, url: `${new URL(s.url).pathname}${s.mod === "mobil" ? " (mobil)" : ""}` }))), ...genel];
+    .map((b) => ({ ...b, url: `${new URL(s.url).pathname}${{ mobil: " (mobil)", etkilesim: " (etkileşim)" }[s.mod] || ""}` }))), ...genel];
   const gruplar = grupla(tum);
   const say = (sev) => gruplar.filter((b) => b.seviye === sev).length;
   const puan = puanla(gruplar);
@@ -171,7 +175,7 @@ function raporYaz(a, sonuclar, genel, klasor) {
   const satir = [
     `# Erişilebilirlik denetimi`, ``,
     `Adres: ${a.adresler[0]}  `, `Tarih: ${new Date().toLocaleString("tr-TR")}  `,
-    `Sayfa: ${new Set(sonuclar.map((s) => s.url)).size} (masaüstü + mobil)`, ``,
+    `Sayfa: ${new Set(sonuclar.map((s) => s.url)).size} (masaüstü + mobil${a.etkilesim ? " + etkileşim" : ""})`, ``,
     `| Boyut | Puan |`, `|---|---|`,
     ...Object.entries(puan).map(([k, v]) => `| ${ad[k]} (${k}) | ${v}/100 |`), ``,
     `**Kritik: ${say("kritik")} · Uyarı: ${say("uyari")} · Bilgi: ${say("bilgi")}**`, ``,
@@ -195,7 +199,7 @@ function raporYaz(a, sonuclar, genel, klasor) {
     }
   }
   satir.push(`## Sayfa ölçümleri`, ``, `| Sayfa | Mod | Durum | İlk ekran öğe | İlk ekran kelime | Okunabilirlik | Birincil buton | CLS | LCP ms | KB |`, `|---|---|---|---|---|---|---|---|---|---|`);
-  for (const s of sonuclar) {
+  for (const s of sonuclar.filter((s) => s.mod !== "etkilesim")) {
     const m = s.metrik || {};
     satir.push(`| ${new URL(s.url).pathname} | ${s.mod} | ${s.hata ? "HATA: " + s.hata : s.durum} | ${m.ilkEkranEtkilesim ?? ""} | ${m.ilkEkranKelime ?? ""} | ${m.okunabilirlik ?? "-"} | ${m.birincilButon ?? ""} | ${m.cls ?? "-"} | ${m.lcp ?? "-"} | ${m.agirlikKB ?? "-"} |`);
   }
@@ -239,6 +243,12 @@ async function main() {
       const temiz = l.href.split("#")[0].split("?")[0];
       if (gorulen.has(temiz) || /\.(pdf|docx?|xlsx?|zip|png|jpe?g|svg)$/i.test(temiz) || /(cikis|logout|signout)/i.test(temiz)) continue;
       gorulen.add(temiz); kuyruk.push(temiz); ekBirakilan--;
+    }
+  }
+  if (a.etkilesim) {
+    for (const s of sonuclar.filter((s) => s.mod === "masaustu" && !s.hata)) {
+      if (!a.sessiz) console.log(`⇢ etkileşim: ${new URL(s.url).pathname}`);
+      sonuclar.push(await etkilesimOlc(tr, s.url, a));
     }
   }
   await tr.close();
