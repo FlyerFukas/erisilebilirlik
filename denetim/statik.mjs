@@ -5,8 +5,8 @@
 //
 //   node statik.mjs <proje-klasörü> [--json dosya]
 // Çıkış kodu: kritik bulgu varsa 1.
-import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { KURALLAR } from "./kurallar.mjs";
 
@@ -61,7 +61,8 @@ const KURAL = [
     "Ham hata mesajı (exception metni) kullanıcıya gösteriliyor: insan diliyle mesaj ve sonraki adım yaz", (m, _, d) => ARAYUZ.test(d)],
   // Sunucudan arayüze dönen metne gömülü ham hata: return { hata: `Eklenemedi: ${error.message}` }.
   // throw new Error(...) sayılmaz: Next.js canlıda sunucu hata metnini kullanıcıya göstermez.
-  ["B12", "bilgi", /\$\{\s*(e|err|error|h)\??\.message\s*\}/g,
+  // Değişken adı serbest: okumaHatasi, yazmaHatasi, e2 de aynı ham metni taşır (pilot: İlişki Haritası 9 kaçak).
+  ["B12", "bilgi", /\$\{\s*[A-Za-z_$][\w$]*\??\.message\s*\}/g,
     "Ham hata mesajı (veritabanı/exception metni) arayüze dönen mesaja gömülü: kullanıcıya ne olduğunu ve ne yapacağını insan diliyle söyle",
     (m, metin) => { const s = satiri(metin, m.index); return /(hata|mesaj|message|error|uyari)\s*:|\.push\(|toast|alert\(/i.test(s) && !/throw\s|console\./.test(s); }],
   ["S06", "uyari", new RegExp(String.raw`<button\b(?![^>]*aria-label)${OZ}>\s*<(svg|[A-Z]\w*Icon)\b(?:[^]*?<\/\1>|${OZ}\/>)\s*<\/button>`, "g"), "Yalnız ikonlu, adı olmayan buton",
@@ -95,5 +96,5 @@ const say = (sev) => bulgular.filter((b) => b.seviye === sev).length;
 for (const sev of ["kritik", "uyari", "bilgi"]) for (const b of bulgular.filter((b) => b.seviye === sev))
   console.log(`[${{ kritik: "KRİTİK", uyari: "UYARI", bilgi: "BİLGİ" }[sev]} ${b.kural}] ${b.yer}  ${b.mesaj}\n    ${b.ornek}\n    → ${KURALLAR[b.kural]?.cozum || ""}`);
 console.log(`\nStatik tarama: ${dosyalar(kok).length} dosya · Kritik ${say("kritik")} · Uyarı ${say("uyari")} · Bilgi ${say("bilgi")}`);
-if (jsonYolu) writeFileSync(jsonYolu, JSON.stringify(bulgular, null, 1), "utf8");
+if (jsonYolu) { mkdirSync(dirname(resolve(jsonYolu)), { recursive: true }); writeFileSync(jsonYolu, JSON.stringify(bulgular, null, 1), "utf8"); }
 process.exit(say("kritik") ? 1 : 0);

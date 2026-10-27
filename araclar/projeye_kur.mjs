@@ -12,6 +12,7 @@
 //   erisim/niyet.md        ürün kimin için, hangi 3 görev için (Ö01 senaryoları ve K02 buradan çıkar)
 //   package.json           "erisim" ve "erisim:kur" betikleri
 //   .gitignore             rapor, node_modules ve oturum dosyası (çerez içerir) dışarıda
+//   .vercelignore          yalnız derlemesiz (package.json'sız) Vercel projesinde: erisim/ yayına çıkmaz
 //   CLAUDE.md              erişilebilirlik bölümü (Claude her arayüz işinde skill + denetim)
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -106,6 +107,27 @@ const mevcut = existsSync(gi) ? readFileSync(gi, "utf8") : "";
 const eksik = satirlar.filter((s) => !mevcut.split(/\r?\n/).includes(s));
 if (eksik.length) yaz(gi, `${mevcut}${mevcut && !mevcut.endsWith("\n") ? "\n" : ""}\n# Erişilebilirlik denetimi (oturum dosyası çerez içerir, asla commit'lenmez)\n${eksik.join("\n")}\n`, `${eksik.length} satır`);
 else yapilan.push("dokunma   .gitignore  (satırlar var)");
+
+// 4a · Derleme adımı olmayan (düz HTML) Vercel projesinde klasörün tamamı yayına çıkar: erisim/ (niyet.md, denetim kodu)
+// adresten okunabilir olurdu. .vercelignore ile yayından çıkarılır. (Pilot: Gelir Gider)
+if (!existsSync(pj) && existsSync(join(kok, "vercel.json"))) {
+  const vi = join(kok, ".vercelignore");
+  const vm = existsSync(vi) ? readFileSync(vi, "utf8") : "";
+  const veksik = ["erisim/", "erisim-rapor/"].filter((s) => !vm.split(/\r?\n/).includes(s));
+  if (veksik.length) yaz(vi, `${vm}${vm && !vm.endsWith("\n") ? "\n" : ""}# Erişilebilirlik denetimi yayına çıkmaz\n${veksik.join("\n")}\n`, "erisim/ yayın dışı");
+  else yapilan.push("dokunma   .vercelignore  (satırlar var)");
+}
+
+// 4c · Prettier: lint-staged commit sırasında kopyayı yeniden biçimlendirirse kaynakla fark doğar ve
+// her güncellemede sahte değişiklik görünür (pilot: Örnek Proje). Prettier kullanan projede kopya biçimlendirme dışı.
+const prettierVar = [".prettierrc", ".prettierrc.json", ".prettierrc.js", ".prettierrc.mjs", "prettier.config.js", "prettier.config.mjs", "prettier.config.cjs", ".prettierignore"]
+  .some((d) => existsSync(join(kok, d)));
+if (prettierVar) {
+  const pi = join(kok, ".prettierignore");
+  const pm = existsSync(pi) ? readFileSync(pi, "utf8") : "";
+  if (pm.split(/\r?\n/).includes("erisim/denetim/")) yapilan.push("dokunma   .prettierignore  (satır var)");
+  else yaz(pi, `${pm}${pm && !pm.endsWith("\n") ? "\n" : ""}# Erişilebilirlik denetimi kopyası (kaynakla aynı kalmalı)\nerisim/denetim/\n`, "denetim kopyası biçimlendirme dışı");
+}
 
 // 4b · ESLint: düz yapılandırma (eslint.config.*) bütün depoyu tarar; denetim kopyası projenin lint'ine girmesin.
 // Yalnız globalIgnores([ ... ]) kalıbı varsa satır eklenir; başka biçimde dokunulmaz, elle eklemek için uyarılır.
