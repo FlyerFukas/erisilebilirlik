@@ -74,8 +74,9 @@ const KURAL = [
   ["S06", "uyari", new RegExp(String.raw`<button\b(?![^>]*aria-label)${OZ}>\s*<(svg|[A-Z]\w*Icon)\b(?:[^]*?<\/\1>|${OZ}\/>)\s*<\/button>`, "g"), "Yalnız ikonlu, adı olmayan buton",
     (m, _, d) => ARAYUZ.test(d) && !/aria-label|title=/.test(m[0])],
   // Bağlantı gezinir, buton iş yapar [COGA 4.2.2]: sayfa değiştiren buton yeni sekmede açılamaz, adresi görünmez.
+  // router.replace sayılmaz: geçmişe kayıt eklemeden süzgeç sıfırlamak eylemdir (pilot: Örnek Uygulama "Filtreleri temizle").
   ["S02", "bilgi", new RegExp(String.raw`<(button|Button)\b${OZ}>`, "g"), "Buton sayfa değiştiriyor: gezinme için bağlantı (<Link>/<a>) kullan, yeni sekmede açılabilsin",
-    (m, _, d) => ARAYUZ.test(d) && /onClick=\{[^]*?(router\.(push|replace)\(|navigate\(|location\.(href|assign)|window\.location\s*=)/.test(m[0])],
+    (m, _, d) => ARAYUZ.test(d) && /onClick=\{[^]*?(router\.push\(|navigate\(|location\.(href|assign)|window\.location\s*=)/.test(m[0])],
   // Açılır listede seçim bağlamı değiştirmez [COGA 4.9.1]. Filtre güncellemesi de bu kalıba uyar, ayrımı --etkilesim yapar: bilgi.
   ["B09", "bilgi", new RegExp(String.raw`<(select|Select)\b${OZ}>`, "g"), "Açılır listede seçim sayfayı değiştiriyor ya da formu gönderiyor: filtreyse sorun yok, başka sayfaya gidiyorsa seçimi bir butonla onaylat",
     (m, _, d) => ARAYUZ.test(d) && /onChange=\{[^]*?(router\.(push|replace)\(|navigate\(|location\.(href|assign)|requestSubmit\(|\.submit\(\))/.test(m[0])],
