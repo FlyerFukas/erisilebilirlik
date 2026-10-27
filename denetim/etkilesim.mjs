@@ -40,7 +40,8 @@ export async function etkilesimOlc(tr, url, a) {
           ekle("B08", "bilgi", "Boş gönderimde yalnız tarayıcının kendi doğrulama balonu çıkıyor: birkaç saniyede kayboluyor, alanın yanında kalıcı mesaj yok", [ad]);
         else if (bos.yeniMetin.length && !bos.yakinda)
           ekle("B08", "bilgi", "Hata mesajı alanın yanında değil (sayfanın başka yerinde): kullanıcı hangi alanın sorunlu olduğunu aramak zorunda", [`${ad} → "${bos.yeniMetin[0].slice(0, 60)}"`]);
-        if (!bos.tepkiMs && !bos.yerelGecersiz && !bos.gitti)
+        // tepkiMs 0 olabilir (aynı karede tepki): "yok" yalnız null'dır.
+        if (bos.tepkiMs == null && !bos.yerelGecersiz && !bos.gitti)
           ekle("S04", "uyari", "Formu gönderince 1 sn içinde ekranda hiçbir şey değişmedi: kullanıcı bastı mı basmadı mı bilemez, tekrar basar", [ad]);
       }
       // 2 · Dolu gönderim (ağ hatası taklidi): veri korunuyor mu
