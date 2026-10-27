@@ -82,6 +82,8 @@ const sKural = new Set(sKotu.bulgular.map((b) => `${b.kural}:${b.seviye}`));
 for (const beklenen of ["K01:kritik", "K01:uyari", "B11:kritik", "B13:uyari", "B05:uyari", "B09:uyari", "B12:uyari", "B12:bilgi", "S06:uyari"]) {
   dogrula(sKural.has(beklenen), `statik/kotu → ${beklenen}`);
 }
+dogrula(sKotu.bulgular.some((b) => b.kural === "B12" && b.mesaj.includes("canlıda İngilizce")), "statik/kotu → B12 setHata((e as Error).message)");
+dogrula(sKotu.bulgular.some((b) => b.yer.startsWith("HataGoster.tsx") && b.seviye === "bilgi"), "statik/kotu → B12 ${(e as Error).message} şablonu");
 dogrula(sKotu.kod === 1, "statik/kotu kritik bulguda çıkış kodu 1");
 const sIyi = await statik("iyi");
 dogrula(sIyi.kod === 0 && sIyi.bulgular.length === 0, `statik/iyi bulgu vermiyor${sIyi.bulgular.length ? ": " + sIyi.bulgular.map((b) => b.kural + " " + b.ornek).join(" | ") : ""}`);

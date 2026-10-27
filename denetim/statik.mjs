@@ -62,9 +62,15 @@ const KURAL = [
   // Sunucudan arayüze dönen metne gömülü ham hata: return { hata: `Eklenemedi: ${error.message}` }.
   // throw new Error(...) sayılmaz: Next.js canlıda sunucu hata metnini kullanıcıya göstermez.
   // Değişken adı serbest: okumaHatasi, yazmaHatasi, e2 de aynı ham metni taşır (pilot: İlişki Haritası 9 kaçak).
-  ["B12", "bilgi", /\$\{\s*[A-Za-z_$][\w$]*\??\.message\s*\}/g,
+  // Tür dönüşümlü yazım da aynı metni taşır: ${(e as Error).message}.
+  ["B12", "bilgi", /\$\{\s*(?:[A-Za-z_$][\w$]*|\(\s*[A-Za-z_$][\w$]*\s+as\s+Error\s*\))\??\.message\s*\}/g,
     "Ham hata mesajı (veritabanı/exception metni) arayüze dönen mesaja gömülü: kullanıcıya ne olduğunu ve ne yapacağını insan diliyle söyle",
     (m, metin) => { const s = satiri(metin, m.index); return /(hata|mesaj|message|error|uyari)\s*:|\.push\(|toast|alert\(/i.test(s) && !/throw\s|console\./.test(s); }],
+  // İstemcide yakalanan sunucu hatası ekrana basılıyor. Next.js canlıda bu metni gizler ve yerine İngilizce genel
+  // mesaj koyar ("An error occurred in the Server Components render..."). (Pilot: İlişki Haritası 5 bileşen)
+  ["B12", "uyari", /set[A-Z]\w*\(\s*\(?\s*[A-Za-z_$][\w$]*(?:\s+as\s+Error)?\s*\)?\??\.message\s*\)/g,
+    "Yakalanan hata metni doğrudan ekrana basılıyor: sunucu eyleminden geliyorsa canlıda İngilizce genel mesaja dönüşür. Eylem { hata } döndürsün ya da metni Türkçeye çevir",
+    (m, _, d) => ARAYUZ.test(d)],
   ["S06", "uyari", new RegExp(String.raw`<button\b(?![^>]*aria-label)${OZ}>\s*<(svg|[A-Z]\w*Icon)\b(?:[^]*?<\/\1>|${OZ}\/>)\s*<\/button>`, "g"), "Yalnız ikonlu, adı olmayan buton",
     (m, _, d) => ARAYUZ.test(d) && !/aria-label|title=/.test(m[0])],
 ];
