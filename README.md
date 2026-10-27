@@ -10,6 +10,12 @@ Son kullanıcının bir web uygulamasını, mobil ürünü ya da dijital hizmeti
 # bir sayfayı denetle (masaüstü + mobil, 4 bağlantı daha gezer)
 node denetim/denetle.mjs http://localhost:3000 --tara 4 --cikti erisim-rapor
 
+# formları da gerçekten gönder (yazma istekleri ağda kesilir, kayıt oluşmaz)
+node denetim/denetle.mjs http://localhost:3000 --etkilesim
+
+# kaynak kodu tara (sunucu gerekmez, giriş arkası ekranlar dahil)
+node denetim/statik.mjs ../projem
+
 # denetimin kendi testi
 cd denetim && npm test
 
@@ -26,14 +32,14 @@ py -I araclar/skill_kur.py
 node araclar/projeye_kur.mjs ../projem
 ```
 
-Projeye kurulduktan sonra projede: `npm run erisim:kur` (bir kez), `npm run erisim -- <adres> --tara 4` (ilk seferde `--taban-yaz`). Giriş arkası ekranlar için `--oturum erisim/oturum.json`.
+Projeye kurulduktan sonra projede: `npm run erisim:kur` (bir kez), `npm run erisim -- <adres> --tara 4` (ilk seferde `--taban-yaz`). Giriş arkası ekranlar için `--oturum erisim/oturum.json`. Kod taraması: `npm run erisim:statik`. package.json'u olmayan projede kit doğrudan `node erisim/denetim/...` komutlarını yazar.
 
 ## Düzen
 
 | Yol | İçerik |
 |---|---|
 | `skill/erisilebilirlik/` | Skill: `SKILL.md`, `references/katalog.md` (48 kural + 8 ölçüm), `kaliplar.md`, `test-protokolleri.md`, `kaynakca.md` |
-| `denetim/` | Otomatik denetim: `denetle.mjs` (komut), `olcumler.js` (sayfa içi ölçümler), `kurallar.mjs` (adlar, eşikler), `sozluk.json` (kelime listeleri), `test/` |
+| `denetim/` | Otomatik denetim: `denetle.mjs` (komut), `olcumler.js` (sayfa içi ölçümler), `etkilesim.mjs` (form gönderimi), `statik.mjs` (kod taraması), `kurallar.mjs` (adlar, eşikler), `sozluk.json` (kelime listeleri), `test/` |
 | `araclar/` | Kaynak dönüştürme, arama, skill kurulumu, projeye kurulum (`projeye_kur.mjs`) |
 | `kaynakca/notlar/` | 16 kaynağın bölüm bölüm notları (kendi cümlemizle, sayfa numaralı); katalogdaki her atıfın dayanağı |
 | `kaynaklar/`, `donusum/` | Telifli kaynaklar ve ham metni. **Depoya girmez** (`.gitignore`) |
