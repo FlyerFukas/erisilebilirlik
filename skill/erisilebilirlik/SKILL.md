@@ -75,11 +75,26 @@ node C:/Users/furka/Music/Erisilebilirlik/denetim/denetle.mjs http://localhost:3
 - Masaüstü (1366 px) ve mobil (390 px) açar, 4 bağlantı daha gezer, `erisim-rapor/rapor.md` + ekran görüntüsü yazar. Düzen kayması (CLS), yüklenme (LCP), sayfa ağırlığı da ölçülür.
 - **Form ya da gönderim değiştiyse `--etkilesim` ekle:** form gerçekten gönderilir (yazma istekleri ağda kesilir, canlı sitede bile kayıt oluşmaz); boş gönderimde hata çıkıyor mu, alanın yanında mı, ağ hatasında veri korunuyor mu, 1 sn içinde tepki var mı (B08, S04).
 - **Kod taraması:** `npm run erisim:statik` (ya da `node C:/Users/furka/Music/Erisilebilirlik/denetim/statik.mjs <proje>`): sunucu ve giriş gerekmeden kaynak kodda belirsiz etiket, önceden işaretli izin, dilsiz tarih biçimi, yapıştırma engeli, adsız ikon buton, ham hata mesajı. Giriş arkası ekranları da kapsar.
-- **Kritik bulgu varsa çıkış kodu 1**: iş bitmemiştir, düzelt ve yeniden çalıştır.
-- Uyarıları tek tek değerlendir: düzelt ya da neden bilinçli olduğunu bir satırla yaz.
+- **Kritik bulgu varsa çıkış kodu 1**: iş bitmemiştir. Düzeltme yolu aşağıdaki öneri kartlarıdır; kendi kafana göre düzeltme seçme.
 - Furkan'a **kanıt** olarak üç boyutun puanını, kritik/uyarı sayısını ve rapor yolunu göster. `erisim/taban.json` varsa tabana göre değişimi de göster. "Sade oldu" deme; raporu göster.
 - **Giriş arkasındaki ekranlar:** `--oturum erisim/oturum.json` (oluşturma: `npx --prefix erisim/denetim playwright-core codegen --channel msedge --save-storage=erisim/oturum.json <adres>`; giriş Furkan'ın işidir, oturum dosyası asla commit'lenmez).
 - İlk denetimde `--taban-yaz` ile taban çizgisi; terim sözlüğü `erisim/terimler.json` kendiliğinden okunur.
+
+## 3a. Öneri kartları: önce onay, sonra kartta yazan skill ile uygulama
+
+Denetim `rapor.json → oneriler` dizisini yazar (kritik ve uyarı, kural başına bir kart). Her kartın tarifi `denetim/tarifler.json`'da: hangi skill (`beceri`, sırayla), gerekirse hangi MCP, hangi adımlar. **Düzeltme yolunu sen seçmezsin; tarif seçer, Furkan onaylar.**
+
+1. **Ele:** `erisim/niyet.md`'yi oku. Niyet sıfatlarıyla çatışan kartı gösterme (ör. "sakin" bir üründe dikkat çekici animasyon); neden elediğini tek satırla söyle.
+2. **Sor:** kartları soru kutusuyla (AskUserQuestion) sor, bir seferde en çok 4 kart, önemliler önce. Soru metni kartın `kart` alanıdır: hangi sayfa, sorun ne, ne değişecek, hangi skill'le. Kural kodu, teknik terim, dolgu yok. Seçenekler:
+   - **Uygula**: kartta yazan yolla.
+   - **Başka yolla uygula**: Furkan ne istediğini yazar (Other).
+   - **Atla**: dokunma; rapora "atlandı" diye not düş.
+   Somut metin değişikliğinde kartın altına önce/sonra örneğini koy (ör. "Gönder" → "Başvuruyu gönder").
+3. **Uygula:** onaylanan her kart için `beceri` listesindeki skill'leri sırayla Skill aracıyla çağır (ör. `ux-copy` metni yazar, `impeccable` `clarify` ile işler); `mcp` yazıyorsa o MCP'yi kullan, kurulu değilse tarifteki yedek yolu izle. Proje talimatı (CLAUDE.md) ek skill istiyorsa onu da çağır. Kartın kapsamı dışına çıkma.
+4. **Tara:** değişen dosyaları `web-design-guidelines` ile tara; yalnızca bu değişikliğin yarattığı sorunu düzelt.
+5. **Kanıtla:** denetimi yeniden çalıştır (form değiştiyse `--etkilesim`), puan farkını, kapanan kartları ve rapor yolunu göster.
+
+Tarifi olmayan bir sorun görürsen (elle kontrol, insan testi) aynı biçimde kart yaz ve sor; tarifi `tarifler.json`'a eklemeyi öner.
 
 ## 4. Elle kontrol (otomatik denetim bunları göremez)
 

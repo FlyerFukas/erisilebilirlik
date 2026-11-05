@@ -20,7 +20,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const DENETIM_DOSYALARI = ["denetle.mjs", "olcumler.js", "etkilesim.mjs", "statik.mjs", "kurallar.mjs", "sozluk.json"];
+const DENETIM_DOSYALARI = ["denetle.mjs", "olcumler.js", "etkilesim.mjs", "statik.mjs", "kurallar.mjs", "sozluk.json", "tarifler.json"];
 const PLAYWRIGHT = "1.64.1";
 
 const arg = process.argv.slice(2);

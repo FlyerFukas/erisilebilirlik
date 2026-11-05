@@ -23,6 +23,9 @@ import { etkilesimOlc } from "./etkilesim.mjs";
 import { KURALLAR, ESIK } from "./kurallar.mjs";
 
 const KOK = dirname(fileURLToPath(import.meta.url));
+// Tarif katmanı: bulgu → sade öneri kartı → Furkan onayı → kartta yazan skill ile uygulama.
+// (docs/plans/2026-11-05-tarif-katmani-design.md) Eski kit kopyasında dosya yoksa kartsız devam eder.
+const TARIF = existsSync(join(KOK, "tarifler.json")) ? JSON.parse(readFileSync(join(KOK, "tarifler.json"), "utf8")) : null;
 const sozluk = JSON.parse(readFileSync(join(KOK, "sozluk.json"), "utf8"));
 
 function argumanlar(argv) {
@@ -226,6 +229,39 @@ function grupla(bulgular) {
   return [...gruplar.values()];
 }
 
+// Kritik ve uyarı bulgularından kural başına bir öneri kartı. Bilgi seviyesi kart olmaz.
+// Kart metni sade Türkçedir: kural kodu ve teknik terim içermez (test/calistir.mjs sınar).
+function oneriKartlari(gruplar, tarif = TARIF) {
+  if (!tarif) return [];
+  const sira = { kritik: 0, uyari: 1 };
+  const kurala = new Map();
+  for (const b of gruplar.filter((b) => b.seviye in sira)) {
+    const k = kurala.get(b.kural);
+    if (!k) kurala.set(b.kural, { kural: b.kural, seviye: b.seviye, sayfalar: [...b.sayfalar], ornekler: [...(b.ornekler || [])] });
+    else {
+      if (sira[b.seviye] < sira[k.seviye]) k.seviye = b.seviye;
+      for (const x of b.sayfalar) if (!k.sayfalar.includes(x)) k.sayfalar.push(x);
+      k.ornekler.push(...(b.ornekler || []));
+    }
+  }
+  const sayfaAdi = (yol) => { const y = yol.replace(/ \((mobil|etkileşim)\)$/, ""); return y === "/" ? "Ana sayfa" : `${y} sayfası`; };
+  return [...kurala.values()].filter((k) => tarif.kurallar[k.kural])
+    .sort((a, b) => sira[a.seviye] - sira[b.seviye] || a.kural.localeCompare(b.kural))
+    .map((k) => {
+      const t = tarif.kurallar[k.kural];
+      const tekil = [...new Set(k.sayfalar.map(sayfaAdi))];
+      const yer = tekil.length > 2 ? `${tekil[0]} ve ${tekil.length - 1} sayfa daha` : tekil.join(" ve ");
+      const yollar = [...t.beceri, ...(t.mcp ? [t.mcp] : [])].map((x) => tarif._yollar[x] || x);
+      const yol = yollar.length > 1 ? `${yollar.slice(0, -1).join(", ")} ve ${yollar.at(-1)}` : yollar[0];
+      return {
+        kural: k.kural, seviye: k.seviye, sayfalar: k.sayfalar, yer,
+        sorun: t.sorun, oneri: t.oneri, yol, beceri: t.beceri, mcp: t.mcp, adimlar: [...t.adimlar, ...tarif._ortak_adimlar],
+        ornekler: k.ornekler.slice(0, 5),
+        kart: `${yer}: ${t.sorun} Öneri: ${t.oneri} Bunu ${yol} ile yaparım.`,
+      };
+    });
+}
+
 function puanla(gruplar) {
   const puan = { B: 100, S: 100, K: 100 };
   const ceza = { kritik: 15, uyari: 5, bilgi: 0 };
@@ -258,6 +294,13 @@ function raporYaz(a, sonuclar, genel, klasor) {
     `> Puan kıyas içindir: her ayrı sorun bir kez sayılır (kritik −15, uyarı −5). Otomatik denetim sorunların bir kısmını yakalar;`,
     `> 5 saniye testi, gövde testi ve 3 kişilik kullanım testi yerini tutmaz (katalog Ö bölümü).`, ``,
   ];
+  const oneriler = oneriKartlari(gruplar);
+  if (oneriler.length) {
+    satir.push(`## Öneri kartları (onayla, sonra uygula)`, ``,
+      `> Claude bunları tek tek sorar: Uygula · Başka yolla uygula · Atla. Onaysız hiçbir şey değişmez. Tarifler: denetim/tarifler.json`, ``);
+    oneriler.forEach((o, i) => satir.push(`${i + 1}. ${o.seviye === "kritik" ? "**Önemli.** " : ""}${o.kart}`));
+    satir.push(``);
+  }
   for (const sev of ["kritik", "uyari", "bilgi"]) {
     const liste = gruplar.filter((b) => b.seviye === sev);
     if (!liste.length) continue;
@@ -276,7 +319,7 @@ function raporYaz(a, sonuclar, genel, klasor) {
     satir.push(`| ${new URL(s.url).pathname} | ${s.mod} | ${s.hata ? "HATA: " + s.hata : s.durum} | ${m.ilkEkranEtkilesim ?? ""} | ${m.ilkEkranKelime ?? ""} | ${m.okunabilirlik ?? "-"} | ${m.birincilButon ?? ""} | ${m.cls ?? "-"} | ${m.lcp ?? "-"} | ${m.agirlikKB ?? "-"} |`);
   }
   writeFileSync(join(klasor, "rapor.md"), satir.join("\n"), "utf8");
-  writeFileSync(join(klasor, "rapor.json"), JSON.stringify({ puan, bulgular: gruplar, sonuclar }, null, 1), "utf8");
+  writeFileSync(join(klasor, "rapor.json"), JSON.stringify({ puan, oneriler, bulgular: gruplar, sonuclar }, null, 1), "utf8");
   return { tum: gruplar, puan, say };
 }
 

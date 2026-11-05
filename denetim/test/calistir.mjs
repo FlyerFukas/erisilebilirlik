@@ -17,6 +17,16 @@ const katalog = readFileSync(join(BURASI, "../../skill/erisilebilirlik/reference
 const eksik = Object.keys(KURALLAR).filter((id) => !new RegExp(`^### ${id}\\b`, "m").test(katalog));
 dogrula(!eksik.length, `her denetim kuralı katalogda var${eksik.length ? ": eksik " + eksik.join(",") : ""}`);
 
+// Tarif katmanı: her kuralın tarifi var, kart cümleleri sade (kural kodu ve teknik terim yok), yollar tanımlı.
+const tarif = JSON.parse(readFileSync(join(BURASI, "../tarifler.json"), "utf8"));
+const tarifsiz = Object.keys(KURALLAR).filter((id) => !tarif.kurallar[id]?.sorun || !tarif.kurallar[id]?.oneri || !tarif.kurallar[id]?.beceri?.length || !tarif.kurallar[id]?.adimlar?.length);
+dogrula(!tarifsiz.length, `her kuralın tarifi var (sorun, öneri, skill, adım)${tarifsiz.length ? ": eksik " + tarifsiz.join(",") : ""}`);
+const yolsuz = Object.entries(tarif.kurallar).flatMap(([id, t]) => [...t.beceri, ...(t.mcp ? [t.mcp] : [])].filter((x) => !tarif._yollar[x]).map((x) => `${id}:${x}`));
+dogrula(!yolsuz.length, `tariflerdeki her skill ve MCP'nin sade adı var${yolsuz.length ? ": " + yolsuz.join(",") : ""}`);
+const JARGON = /[BSKÖ]\d{2}|h1|label|placeholder|LCP|CLS|aria|autocomplete|px|viewport|hiyerarşi|CSS|HTML|kontrast|bileşen|iyileştir/i;
+const jargonlu = Object.entries(tarif.kurallar).filter(([, t]) => JARGON.test(t.sorun + " " + t.oneri)).map(([id]) => id);
+dogrula(!jargonlu.length, `kart cümlelerinde kural kodu ve teknik terim yok${jargonlu.length ? ": " + jargonlu.join(",") : ""}`);
+
 const sunucu = createServer((istek, yanit) => {
   // Ana sayfaya özgü denetimler için başka bir sınama sayfası da kökte açılabilir: /?sayfa=kotu4.html
   const u = new URL(istek.url, "http://yerel");
@@ -37,6 +47,10 @@ async function denetle(sayfa, ek = []) {
 
 const kotu = await denetle("kotu.html", ["--terimler", join(BURASI, "terimler.json")]);
 const yakalanan = new Set(kotu.bulgular.map((b) => `${b.kural}:${b.seviye}`));
+dogrula(kotu.oneriler?.length > 0 && kotu.oneriler[0].seviye === "kritik", `raporda öneri kartları var, önemli olanlar önce (${kotu.oneriler?.length})`);
+dogrula(kotu.oneriler.every((o) => o.kart.includes("Öneri:") && !/[BSKÖ]\d{2}/.test(o.kart) && o.beceri.length), "her kart sorun + öneri + yol söylüyor, kural kodu içermiyor");
+dogrula(new Set(kotu.oneriler.map((o) => o.kural)).size === kotu.oneriler.length, "aynı kural için tek kart");
+dogrula(!kotu.oneriler.some((o) => o.seviye === "bilgi"), "bilgi seviyesi kart olmuyor");
 for (const beklenen of ["K03:kritik", "B12:kritik", "B06:kritik", "K01:kritik", "K01:uyari", "S06:kritik", "S06:uyari",
   "B13:uyari", "B04:uyari", "B02:uyari", "B01:uyari", "S02:uyari", "K09:uyari", "B08:uyari", "B09:uyari", "S12:kritik", "B10:uyari", "S10:uyari", "S07:uyari",
   // katalog v0.2
