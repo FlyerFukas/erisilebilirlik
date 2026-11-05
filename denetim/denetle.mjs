@@ -244,7 +244,7 @@ function oneriKartlari(gruplar, tarif = TARIF) {
       k.ornekler.push(...(b.ornekler || []));
     }
   }
-  const sayfaAdi = (yol) => { const y = yol.replace(/ \((mobil|etkileşim)\)$/, ""); return y === "/" ? "Ana sayfa" : `${y} sayfası`; };
+  const sayfaAdi = (yol) => { const y = yol.replace(/ \((mobil|etkileşim)\)$/, ""); return y === "/" ? "Ana sayfa" : y.startsWith("(") ? "Sitenin geneli" : `${y} sayfası`; };
   return [...kurala.values()].filter((k) => tarif.kurallar[k.kural])
     .sort((a, b) => sira[a.seviye] - sira[b.seviye] || a.kural.localeCompare(b.kural))
     .map((k) => {

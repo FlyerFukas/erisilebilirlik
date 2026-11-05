@@ -50,6 +50,7 @@ const yakalanan = new Set(kotu.bulgular.map((b) => `${b.kural}:${b.seviye}`));
 dogrula(kotu.oneriler?.length > 0 && kotu.oneriler[0].seviye === "kritik", `raporda öneri kartları var, önemli olanlar önce (${kotu.oneriler?.length})`);
 dogrula(kotu.oneriler.every((o) => o.kart.includes("Öneri:") && !/[BSKÖ]\d{2}/.test(o.kart) && o.beceri.length), "her kart sorun + öneri + yol söylüyor, kural kodu içermiyor");
 dogrula(new Set(kotu.oneriler.map((o) => o.kural)).size === kotu.oneriler.length, "aynı kural için tek kart");
+dogrula(kotu.oneriler.every((o) => !/\(.*\) sayfası/.test(o.kart)), "kartta yer adı okunur (\"(site geneli) sayfası\" yok)");
 dogrula(!kotu.oneriler.some((o) => o.seviye === "bilgi"), "bilgi seviyesi kart olmuyor");
 for (const beklenen of ["K03:kritik", "B12:kritik", "B06:kritik", "K01:kritik", "K01:uyari", "S06:kritik", "S06:uyari",
   "B13:uyari", "B04:uyari", "B02:uyari", "B01:uyari", "S02:uyari", "K09:uyari", "B08:uyari", "B09:uyari", "S12:kritik", "B10:uyari", "S10:uyari", "S07:uyari",
