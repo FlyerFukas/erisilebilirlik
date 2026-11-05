@@ -91,7 +91,7 @@ Hepsi `~/.claude/skills/` altında, yalnızca talimat metni:
 - `web-design-guidelines` (vercel-labs/agent-skills).
 - `ux-copy`, `design-critique`, `user-research`, `accessibility-review` (anthropics/knowledge-work-plugins/design, Apache-2.0). Eklentinin getirdiği 9 MCP kurulmadı.
 
-**Onay bekleyen MCP'ler:** `context7` (uzak, kurulum yok) ve `chrome-devtools` (npx ile yerel). Otomatik güvenlik denetimi ekleme komutunu durdurdu; Furkan karar verecek. Tarifler MCP yoksa çalışmaya devam eder (S14: denetimin kendi açılış ölçümü; belge: WebFetch).
+**MCP'ler (Furkan onayıyla kuruldu):** `context7` (uzak, kurulum yok) ve `chrome-devtools` (npx ile yerel). Tarifler MCP yoksa çalışmaya devam eder (S14: denetimin kendi açılış ölçümü; belge: WebFetch).
 
 **Alınmayanlar:** UI UX Pro Max (estetik kütüphanesi, ücretli sürüme yönlendiriyor), Playwright MCP (denetim programı ve uygulama tarayıcısı aynı işi yapıyor), interface-design (Haziran'dan beri güncellenmemiş), Vercel writing-guidelines (İngilizce belge yazımı).
 
