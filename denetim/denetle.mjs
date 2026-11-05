@@ -313,7 +313,8 @@ async function main() {
     for (const l of masa.linkler || []) {
       if (ekBirakilan <= 0) break;
       const temiz = l.href.split("#")[0].split("?")[0];
-      if (gorulen.has(temiz) || /\.(pdf|docx?|xlsx?|zip|png|jpe?g|svg)$/i.test(temiz) || /(cikis|logout|signout)/i.test(temiz)) continue;
+      // /api/ yollari sayfa degil: indirme ucu (ör. /api/indir/...) gezilince tarayici indirmeye takilip cokuyor
+      if (gorulen.has(temiz) || /\.(pdf|docx?|xlsx?|zip|png|jpe?g|svg)$/i.test(temiz) || /(cikis|logout|signout)/i.test(temiz) || /^\/api\//.test(new URL(temiz).pathname)) continue;
       gorulen.add(temiz); kuyruk.push(temiz); ekBirakilan--;
     }
   }
