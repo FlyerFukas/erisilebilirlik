@@ -15,6 +15,8 @@ description: "Son kullanıcı erişilebilirliği: ürünün kılavuz okumadan, d
 
 Kaynak deposu: `C:\Users\furka\Music\Erisilebilirlik` (önce `HANDOFF.md` en üstteki günlük).
 
+> **İstisna, ticari proje (`Music\ticari-proje`):** bu skill ve denetim orada isteğe bağlıdır. Yalnızca Furkan açıkça isterse çalıştır; "zorunlu" yazan her adım orada geçersizdir (6 Kasım 2026, KARARLAR K-11).
+
 ## Beş temel ilke (her kararın arkasında)
 
 1. **Senin suçun değil.** Kullanıcı takıldıysa ürün kusurludur; "kullanıcı hatası" diye bir kayıt yok.
