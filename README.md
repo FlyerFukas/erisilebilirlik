@@ -1,5 +1,7 @@
 # Erişilebilirlik
 
+<img src=".github/kapak.png" alt="Erişilebilirlik: arayüzün kılavuzsuz kullanılıp kullanılamadığını denetler. Portföyün kod sayfası: bilişsel yük 95, sezgisel etkileşim 95, bilgi kokusu 90, kritik bulgu yok." width="100%">
+
 Son kullanıcının bir web uygulamasını, mobil ürünü ya da dijital hizmeti **kılavuz okumadan, destek hattını aramadan ve zihinsel yorgunluk yaşamadan** anlaması için kural kataloğu, Claude skill'i ve otomatik denetim aracı.
 
 Üç boyut: **bilişsel yük** (cognitive accessibility), **sezgisel etkileşim** (intuitive interaction), **bilgi kokusu** (information scent).
